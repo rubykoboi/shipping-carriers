@@ -1,0 +1,41 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.journaldev.maven</groupId>
+  <artifactId>shipping-carriers</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+<!-- ver 0.0.1-SNAPSHOT:
+	1. first version
+-->
+
+  <dependencies>
+  	<dependency>
+ 	   <groupId>org.apache.pdfbox</groupId>
+	   <artifactId>pdfbox</artifactId>
+ 	   <version>2.0.26</version>
+	</dependency>
+  </dependencies>
+  <build>
+    <pluginManagement>
+      <plugins>
+		<plugin>
+		  <groupId>org.apache.maven.plugins</groupId>
+		  <artifactId>maven-shade-plugin</artifactId>
+		  <executions>
+			<execution>
+				<goals>
+					<goal>shade</goal>
+				</goals>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.journaldev.maven.App</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</execution>
+		  </executions>
+		</plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
