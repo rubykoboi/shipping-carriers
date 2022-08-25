@@ -13,18 +13,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
 public class App {
 
-	private JFrame frame;
-	private JPanel panel;
-	private JButton btnSelect;
 	private final static int CMA_TYPE = 1;
 	private final static int EVERGREEN_TYPE = 2;
 	private final static int MAERSK_TYPE = 3;
