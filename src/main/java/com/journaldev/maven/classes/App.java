@@ -53,7 +53,7 @@ public class App {
 			File file = new File(filesList.get(a));
 			out("read in file ["+a+"] : "+filesList.get(a));
 			fileTypes[a] = determineFileType(file);
-			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]);
+			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]+"'");
 			
 		}
 		/**
@@ -84,10 +84,10 @@ public class App {
 			String currentLine = br.readLine();
 			
 			for (int line = 0; currentLine != null; line ++) {
-				out(line+": "+currentLine);
-				if(currentLine.contains("Arrival Notice"))	return TURKON_TYPE;
-				else if(currentLine.contains("Invoicing and Disputes"))	return MSC_TYPE;
-				else if(currentLine.contains("Evergreen")) return EVERGREEN_TYPE;
+//				out(line+": "+currentLine);
+				if(currentLine.contains("Invoicing and Disputes"))	return MSC_TYPE;
+				if(currentLine.contains("Turkon"))	return TURKON_TYPE;
+				if(currentLine.contains("Evergreen")) return EVERGREEN_TYPE;
 				currentLine = br.readLine();
 			}
 			br.close();
