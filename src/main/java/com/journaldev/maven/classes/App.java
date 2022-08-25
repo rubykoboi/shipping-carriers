@@ -45,16 +45,32 @@ public class App {
 	}
 	
 	public App() throws Exception {
+		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();
 		int fileTypes[] = new int[filesList.size()];
-		
-		// TO-DO: For each file, determine the type
+
 		for(int a=0 ; a<filesList.size(); a++) {
 			File file = new File(filesList.get(a));
 			out("read in file ["+a+"] : "+filesList.get(a));
+
+			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
 			fileTypes[a] = determineFileType(file);
-			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]+"'");
-			
+			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]+"'\n");
+			// TO-DO: PERFORM BL# SEARCH ON EACH FILE BY TYPE
+			switch (fileTypes[a]) {
+				case CMA_TYPE:
+					processCMA();
+				case EVERGREEN_TYPE:
+					processEVERGREEN();
+				case MAERSK_TYPE:
+					processMAERSK();
+				case MSC_TYPE:
+					processMSC();
+				case TURKON_TYPE:
+					processTURKON();
+				default:
+					break;
+			}
 		}
 		/**
 		 * Step 1: Read in one pdf file
@@ -63,6 +79,26 @@ public class App {
 		 * 		4: Determine the B/L #s
 		 * 		5: Rename the files by B/L #
 		 */
+	}
+	
+	public static void processCMA() {
+		// TO-DO: process CMA files
+	}
+
+	public static void processEVERGREEN() {
+		// TO-DO: process EVERGREEN files
+	}
+	
+	public static void processMAERSK() {
+		// TO-DO: process MAERSK files
+	}
+	
+	public static void processMSC() {
+		// TO-DO: process MSC files
+	}
+	
+	public static void processTURKON() {
+		// TO-DO: process TURKON files
 	}
 	
 	public static int determineFileType(File file) {
@@ -91,7 +127,6 @@ public class App {
 				currentLine = br.readLine();
 			}
 			br.close();
-			
 		} catch (Exception ex) {
 			out("we got an exception in determineFileType function, it is "+ ex);
 			ex.printStackTrace();
