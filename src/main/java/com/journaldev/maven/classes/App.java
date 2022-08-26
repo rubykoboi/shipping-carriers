@@ -43,9 +43,11 @@ public class App {
 	
 	public static Matcher matcher;
 	
-	public static File currentTextFile;
+	public static File currentFile;
 	public static int currentStartPage;
 	public static int currentEndPage;
+	
+	public static String printLog = "";
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -61,42 +63,44 @@ public class App {
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();
 		int fileTypes[] = new int[filesList.size()];
-
+		int pageCount;
 		// INITIALIZE ALL BL# PATTERNS
 		PATTERN_CMA = Pattern.compile(CMA_BL_REGEX);
 		PATTERN_EVERGREEN = Pattern.compile(EVERGREEN_BL_REGEX);
 		PATTERN_MAERSK = Pattern.compile(MAERSK_BL_REGEX);
 		PATTERN_MSC = Pattern.compile(MSC_BL_REGEX);
 		PATTERN_TURKON = Pattern.compile(TURKON_BL_REGEX);
-		
+
 		for(int a=0 ; a<filesList.size(); a++) {
-			File file = new File(filesList.get(a));
+			currentFile = new File(filesList.get(a));
 			out("read in file ["+a+"] : "+filesList.get(a));
 
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
-			fileTypes[a] = determineFileType(file);
+			fileTypes[a] = determineFileType(currentFile);
 			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]+"'\n");
-			// TO-DO: PERFORM BL# SEARCH ON EACH FILE BY TYPE
+			PDDocument doc = PDDocument.load(currentFile);
+			pageCount = doc.getNumberOfPages();
+			
 			switch (fileTypes[a]) {
 				case CMA_TYPE:
 					out("processing CMA type");
-					processCMA();
+					processCMA(pageCount);
 					break;
 				case EVERGREEN_TYPE:
 					out("processing EVERGREEN type");
-					processEVERGREEN();
+					processEVERGREEN(pageCount);
 					break;
 				case MAERSK_TYPE:
 					out("processing MAERSK type");
-					processMAERSK();
+					processMAERSK(pageCount);
 					break;
 				case MSC_TYPE:
 					out("processing MSC type");
-					processMSC();
+					processMSC(pageCount);
 					break;
 				case TURKON_TYPE:
 					out("processing TURKON type");
-					processTURKON();
+					processTURKON(pageCount);
 					break;
 				default:
 					break;
@@ -112,7 +116,7 @@ public class App {
 		 */
 	}
 	
-	public static void processCMA() {
+	public static void processCMA(int pageCount) {
 		// TO-DO: process CMA files
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
@@ -132,7 +136,7 @@ public class App {
 		}
 	}
 
-	public static void processEVERGREEN() {
+	public static void processEVERGREEN(int pageCount) {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
 			String currentLine = br.readLine();
@@ -151,7 +155,7 @@ public class App {
 		}
 	}
 	
-	public static void processMAERSK() {
+	public static void processMAERSK(int pageCount) {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
 			String currentLine = br.readLine();
@@ -170,7 +174,7 @@ public class App {
 		}
 	}
 	
-	public static void processMSC() {
+	public static void processMSC(int pageCount) {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
 			String currentLine = br.readLine();
@@ -189,37 +193,75 @@ public class App {
 		}
 	}
 	
-	public static void processTURKON() {
+	public static void processTURKON(int pageCount) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
-			String currentLine = br.readLine();
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+				
 			int blCounter = 0;
-			out("before TURKON while");
-			while(currentLine != null) {
-				matcher = PATTERN_TURKON.matcher(currentLine);
-				if(matcher.find()) {
-					blCounter++;
-					out("the following line seems to have matched the matcher: ");
-					out(currentLine);
-					out(blCounter + " <================found TURKON match: " + matcher.group(1));
-					// TO-DO: split pdf
-					
+			out("before stripping TURKON by page");
+			currentStartPage = 1;
+			currentEndPage = 1;
+			int localStart = currentStartPage;
+			int localEnd = currentEndPage;
+			pdfStripper.setStartPage(currentStartPage);
+			String currentBL = "", nextBL= "";
+			for(int page = 0; page < pageCount; page ++) {
+				boolean foundBL = false;
+				if(pageCount > 1) {
+					currentEndPage = page+1;
+					pdfStripper.setEndPage(currentEndPage);
 				}
-				currentLine = br.readLine();
+				String text = pdfStripper.getText(doc);
+				
+				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt"));
+				
+				//Extract page to textfile
+				doc.close();
+				bw.write(text);
+				bw.close();
+				
+				File textfile = new File("C:\\SC\\text.txt");
+				BufferedReader br = new BufferedReader(new FileReader(textfile));
+				String currentLine = br.readLine();
+
+				
+				while(currentLine != null) {
+					matcher = PATTERN_TURKON.matcher(currentLine);
+					if(matcher.find()) {
+						foundBL = true;
+						if(currentBL == "") {
+							currentBL = matcher.group(1);
+							break;
+						} else {
+							nextBL = matcher.group(1);
+							splitDoc(currentStartPage, currentEndPage);
+						}
+						blCounter++;
+						out("the following line seems to have matched the matcher: ");
+						out(currentLine);
+						out(blCounter + " <================found TURKON match: " + matcher.group(1));
+						currentBL = matcher.group(1);
+					}
+					currentLine = br.readLine();
+				}
+				out("out of while");
+				br.close();
 			}
-			out("out of while");
-			br.close();
 		} catch (Exception e) {
 			out("We got an exception from processTURKON " + e);
 			e.printStackTrace();
 		}
 	}
 	
+	public static void splitDoc(int start, int end) {
+		
+	}
+	
 	public static int determineFileType(File file) {
 		out("inside determineFileType method");
 		try {
 			PDDocument doc = PDDocument.load(file);
-			currentTextFile = file;
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String text = pdfStripper.getText(doc);
 			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt"));
@@ -256,6 +298,7 @@ public class App {
 	
 	public static void out(String stringToPrint) {
 		System.out.println(stringToPrint);
+		printLog += stringToPrint + "\n";
 	}
 
 }
