@@ -208,6 +208,7 @@ public class App {
 			String currentBL = "", nextBL= "";
 			for(int page = 0; page < pageCount; page ++) {
 				boolean foundBL = false;
+				out("on page " + (page+1));
 				if(pageCount > 1) {
 					currentEndPage = page+1;
 					pdfStripper.setEndPage(currentEndPage);
@@ -225,7 +226,6 @@ public class App {
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 
-				
 				while(currentLine != null) {
 					matcher = PATTERN_TURKON.matcher(currentLine);
 					if(matcher.find()) {
@@ -235,7 +235,8 @@ public class App {
 							break;
 						} else {
 							nextBL = matcher.group(1);
-							splitDoc(currentStartPage, currentEndPage);
+							splitDocAndRename(currentStartPage, currentEndPage, currentBL);
+							
 						}
 						blCounter++;
 						out("the following line seems to have matched the matcher: ");
@@ -254,7 +255,7 @@ public class App {
 		}
 	}
 	
-	public static void splitDoc(int start, int end) {
+	public static void splitDocAndRename(int start, int end, String newName) {
 		
 	}
 	
