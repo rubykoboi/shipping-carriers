@@ -6,6 +6,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
@@ -27,6 +29,7 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static String[] TYPE = {"CMA", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	private final static String ULTIMATE_FILE_PATH = "C:\\SC";
+	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
 	private List<String> filesList;
 	
 	private final static String CMA_BL_REGEX = "([^a-zA-Z0-9\\s*][A-Z]{3}[0-9]{7})[^a-zA-Z0-9\\s*]";
@@ -119,7 +122,18 @@ public class App {
 	public static void processCMA(int pageCount) {
 		// TO-DO: process CMA files
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			String text = pdfStripper.getText(doc);
+			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			
+			//Extract page to textfile
+			doc.close();
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before CMA while");
 			while(currentLine != null) {
@@ -138,7 +152,19 @@ public class App {
 
 	public static void processEVERGREEN(int pageCount) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+				
+			String text = pdfStripper.getText(doc);
+			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			
+			//Extract page to textfile
+			doc.close();
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before EVERGREEN while");
 			while(currentLine != null) {
@@ -157,7 +183,19 @@ public class App {
 	
 	public static void processMAERSK(int pageCount) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+				
+			String text = pdfStripper.getText(doc);
+			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			
+			//Extract page to textfile
+			doc.close();
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before MAERSK while");
 			while(currentLine != null) {
@@ -176,7 +214,19 @@ public class App {
 	
 	public static void processMSC(int pageCount) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(currentTextFile));
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+				
+			String text = pdfStripper.getText(doc);
+			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			
+			//Extract page to textfile
+			doc.close();
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before MSC while");
 			while(currentLine != null) {
@@ -202,49 +252,56 @@ public class App {
 			out("before stripping TURKON by page");
 			currentStartPage = 1;
 			currentEndPage = 1;
-			int localStart = currentStartPage;
-			int localEnd = currentEndPage;
-			pdfStripper.setStartPage(currentStartPage);
-			String currentBL = "", nextBL= "";
+			int localPage = currentStartPage; // for stripping per page
+			String currentBL = "";
+			out("set BLs to blank");
 			for(int page = 0; page < pageCount; page ++) {
+				pdfStripper.setStartPage(localPage);
+				pdfStripper.setEndPage(localPage);
 				boolean foundBL = false;
+				out("set boolean to false, haven't found BL");
 				out("on page " + (page+1));
 				if(pageCount > 1) {
 					currentEndPage = page+1;
 					pdfStripper.setEndPage(currentEndPage);
 				}
 				String text = pdfStripper.getText(doc);
-				
-				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt"));
+				out("stripped page " + (page+1) + " text ");
+				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
 				
 				//Extract page to textfile
 				doc.close();
 				bw.write(text);
 				bw.close();
 				
-				File textfile = new File("C:\\SC\\text.txt");
+				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 
+				out("going through while loop to search page of BL #");
 				while(currentLine != null) {
 					matcher = PATTERN_TURKON.matcher(currentLine);
 					if(matcher.find()) {
 						foundBL = true;
-						if(currentBL == "") {
-							currentBL = matcher.group(1);
-							break;
-						} else {
-							nextBL = matcher.group(1);
-							splitDocAndRename(currentStartPage, currentEndPage, currentBL);
-							
+						if(currentBL != "") {
+							splitDocAndRename(doc, currentStartPage, currentEndPage, currentBL);
+							currentStartPage = page+1;
+							currentEndPage = page+1;
 						}
+						currentBL = matcher.group(1);
 						blCounter++;
 						out("the following line seems to have matched the matcher: ");
 						out(currentLine);
 						out(blCounter + " <================found TURKON match: " + matcher.group(1));
 						currentBL = matcher.group(1);
+						out("breaking out of while loop to move on to the next page");
+						break;
 					}
 					currentLine = br.readLine();
+				}
+				if(!foundBL) {
+					localPage += 1;
+					out("reset local page for stripping at " + localPage);
 				}
 				out("out of while");
 				br.close();
@@ -255,8 +312,12 @@ public class App {
 		}
 	}
 	
-	public static void splitDocAndRename(int start, int end, String newName) {
-		
+	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
+		Splitter splitter = new Splitter();
+		splitter.setStartPage(start);
+		splitter.setEndPage(end);
+		List<PDDocument> newDoc = splitter.split(doc);
+		newDoc.get(0).save(LOCAL_FILE_PATH + newName);
 	}
 	
 	public static int determineFileType(File file) {
