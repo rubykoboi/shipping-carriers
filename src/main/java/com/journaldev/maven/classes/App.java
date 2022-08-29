@@ -246,26 +246,21 @@ public class App {
 	
 	public static void processTURKON(int pageCount) {
 		try {
-			out("this document has " + pageCount + " number of pages");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
 			int blCounter = 0;
-			out("before stripping TURKON by page");
 			currentStartPage = 1;
 			String currentBL = "";
-			out("set BLs to blank");
+
 			for(int page = 1; page <= pageCount; page ++) {
+				boolean foundBL = false;
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
-				boolean foundBL = false;
-				out("set boolean to false, haven't found BL");
-				out("on page " + (page));
 				String text = pdfStripper.getText(doc);
-				out("stripped page " + (page) + " text ");
-				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
-				
+
 				//Extract page to textfile
+				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
 				bw.write(text);
 				bw.close();
 				
@@ -273,33 +268,25 @@ public class App {
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 
-				out("going through while loop to search page of BL #");
 				while(currentLine != null) {
 					matcher = PATTERN_TURKON.matcher(currentLine);
 					if(matcher.find()) {
-						out("the following line seems to have matched the matcher: ");
-						out(currentLine);
-						out(blCounter + " <================found TURKON match: " + matcher.group(1));
 						foundBL = true;
 						if(currentBL != "") {
 							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
 							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
-							currentStartPage = page;
-							out("new start page is " + currentStartPage);
+							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
 						currentBL = matcher.group(1);
-						out("current BL saved is " + currentBL);
 						blCounter++;
-						out("breaking out of while loop to move on to the next page");
 						break;
 					}
 					currentLine = br.readLine();
 				}
 				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
-				out("out of while and incremented local page to +1 = " + (page+1));
 				br.close();
 			}
-			out("there were " + blCounter +" BL #s found in this document, were there the same amount of documents created?");
+			out("found " + blCounter + " in this document");
 			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processTURKON " + e);
@@ -308,12 +295,10 @@ public class App {
 	}
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
-		out("We are splitting document from page " + start + " to " + end);
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
 		List<PDDocument> newDoc = splitter.split(doc);
-		out("the new document size is " + newDoc.size());
 		PDFMergerUtility mergerPdf = new PDFMergerUtility();
 		String name = "";
 		
@@ -332,7 +317,6 @@ public class App {
 			File file = new File(name);
 			file.delete();
 		}
-		
 	}
 	
 	public static int determineFileType(File file) {
