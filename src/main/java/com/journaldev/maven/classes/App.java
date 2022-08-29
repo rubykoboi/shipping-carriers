@@ -33,7 +33,7 @@ public class App {
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
 	private List<String> filesList;
 	
-	private final static String CMA_BL_REGEX = "([^a-zA-Z0-9\\s*][A-Z]{3}[0-9]{7})[^a-zA-Z0-9\\s*]";
+	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "([^a-zA-Z0-9|\\s*][A-Z]{3}[0-9]{7})[\\s*|^a-zA-Z0-9]";
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "";
@@ -58,7 +58,7 @@ public class App {
 			public void run() {
 				try {
 					new App();
-				} catch (Exception e ) { e.printStackTrace(); }
+				} catch (Exception e) {e.printStackTrace();}
 			}
 		});
 	}
@@ -88,24 +88,24 @@ public class App {
 			switch (fileTypes[a]) {
 				case CMA_TYPE:
 					out("processing CMA type");
-//					processCMA(pageCount);
+					processCMA(pageCount);
 					break;
-				case EVERGREEN_TYPE:
-					out("processing EVERGREEN type");
-//					processEVERGREEN(pageCount);
-					break;
-				case MAERSK_TYPE:
-					out("processing MAERSK type");
-//					processMAERSK(pageCount);
-					break;
-				case MSC_TYPE:
-					out("processing MSC type");
-//					processMSC(pageCount);
-					break;
-				case TURKON_TYPE:
-					out("processing TURKON type");
-					processTURKON(pageCount);
-					break;
+//				case EVERGREEN_TYPE:
+//					out("processing EVERGREEN type");
+////					processEVERGREEN(pageCount);
+//					break;
+//				case MAERSK_TYPE:
+//					out("processing MAERSK type");
+////					processMAERSK(pageCount);
+//					break;
+//				case MSC_TYPE:
+//					out("processing MSC type");
+////					processMSC(pageCount);
+//					break;
+//				case TURKON_TYPE:
+//					out("processing TURKON type");
+//					processTURKON(pageCount);
+//					break;
 				default:
 					break;
 			}
@@ -121,7 +121,6 @@ public class App {
 	}
 	
 	public static void processCMA(int pageCount) {
-		// TO-DO: process CMA files
 		try {
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -143,6 +142,10 @@ public class App {
 					out("found CMA match: " + matcher.group(1));
 				}
 				currentLine = br.readLine();
+			}
+
+			if (pageCount == 1) {
+				
 			}
 			br.close();
 		} catch (Exception e) {
@@ -221,7 +224,7 @@ public class App {
 			String text = pdfStripper.getText(doc);
 			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
 			
-			//Extract page to textfile
+			// Extract page to textfile
 			doc.close();
 			bw.write(text);
 			bw.close();
