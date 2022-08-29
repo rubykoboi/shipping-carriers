@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -87,19 +88,19 @@ public class App {
 			switch (fileTypes[a]) {
 				case CMA_TYPE:
 					out("processing CMA type");
-					processCMA(pageCount);
+//					processCMA(pageCount);
 					break;
 				case EVERGREEN_TYPE:
 					out("processing EVERGREEN type");
-					processEVERGREEN(pageCount);
+//					processEVERGREEN(pageCount);
 					break;
 				case MAERSK_TYPE:
 					out("processing MAERSK type");
-					processMAERSK(pageCount);
+//					processMAERSK(pageCount);
 					break;
 				case MSC_TYPE:
 					out("processing MSC type");
-					processMSC(pageCount);
+//					processMSC(pageCount);
 					break;
 				case TURKON_TYPE:
 					out("processing TURKON type");
@@ -245,32 +246,26 @@ public class App {
 	
 	public static void processTURKON(int pageCount) {
 		try {
+			out("this document has " + pageCount + " number of pages");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
 			int blCounter = 0;
 			out("before stripping TURKON by page");
 			currentStartPage = 1;
-			currentEndPage = 1;
-			int localPage = currentStartPage; // for stripping per page
 			String currentBL = "";
 			out("set BLs to blank");
-			for(int page = 0; page < pageCount; page ++) {
-				pdfStripper.setStartPage(localPage);
-				pdfStripper.setEndPage(localPage);
+			for(int page = 1; page <= pageCount; page ++) {
+				pdfStripper.setStartPage(page);
+				pdfStripper.setEndPage(page);
 				boolean foundBL = false;
 				out("set boolean to false, haven't found BL");
-				out("on page " + (page+1));
-				if(pageCount > 1) {
-					currentEndPage = page+1;
-					pdfStripper.setEndPage(currentEndPage);
-				}
+				out("on page " + (page));
 				String text = pdfStripper.getText(doc);
-				out("stripped page " + (page+1) + " text ");
+				out("stripped page " + (page) + " text ");
 				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
 				
 				//Extract page to textfile
-				doc.close();
 				bw.write(text);
 				bw.close();
 				
@@ -282,30 +277,30 @@ public class App {
 				while(currentLine != null) {
 					matcher = PATTERN_TURKON.matcher(currentLine);
 					if(matcher.find()) {
-						foundBL = true;
-						if(currentBL != "") {
-							splitDocAndRename(doc, currentStartPage, currentEndPage, currentBL);
-							currentStartPage = page+1;
-							currentEndPage = page+1;
-						}
-						currentBL = matcher.group(1);
-						blCounter++;
 						out("the following line seems to have matched the matcher: ");
 						out(currentLine);
 						out(blCounter + " <================found TURKON match: " + matcher.group(1));
+						foundBL = true;
+						if(currentBL != "") {
+							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
+							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+							currentStartPage = page;
+							out("new start page is " + currentStartPage);
+						}
 						currentBL = matcher.group(1);
+						out("current BL saved is " + currentBL);
+						blCounter++;
 						out("breaking out of while loop to move on to the next page");
 						break;
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL) {
-					localPage += 1;
-					out("reset local page for stripping at " + localPage);
-				}
-				out("out of while");
+				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+				out("out of while and incremented local page to +1 = " + (page+1));
 				br.close();
 			}
+			out("there were " + blCounter +" BL #s found in this document, were there the same amount of documents created?");
+			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processTURKON " + e);
 			e.printStackTrace();
@@ -313,11 +308,31 @@ public class App {
 	}
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
+		out("We are splitting document from page " + start + " to " + end);
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
 		List<PDDocument> newDoc = splitter.split(doc);
-		newDoc.get(0).save(LOCAL_FILE_PATH + newName);
+		out("the new document size is " + newDoc.size());
+		PDFMergerUtility mergerPdf = new PDFMergerUtility();
+		String name = "";
+		
+		// MERGE ALL FILES OF THE SAME B/L#
+		for (int page = 0; page < newDoc.size(); page++) {
+			name = LOCAL_FILE_PATH + newName + "_" + page + ".pdf";
+			newDoc.get(page).save(name);
+			mergerPdf.addSource(name);
+		}
+		mergerPdf.setDestinationFileName(LOCAL_FILE_PATH + newName + ".pdf");
+		mergerPdf.mergeDocuments();
+		
+		// DELETE SPLIT PAGES AFTER MERGING
+		for (int page = 0; page < newDoc.size(); page++) {
+			name = LOCAL_FILE_PATH + newName + "_" + page + ".pdf";
+			File file = new File(name);
+			file.delete();
+		}
+		
 	}
 	
 	public static int determineFileType(File file) {
