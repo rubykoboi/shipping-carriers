@@ -124,30 +124,60 @@ public class App {
 		try {
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
-			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
-			
-			//Extract page to textfile
-			doc.close();
-			bw.write(text);
-			bw.close();
-			
-			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
-			BufferedReader br = new BufferedReader(new FileReader(textfile));
-			String currentLine = br.readLine();
-			out("before CMA while");
-			while(currentLine != null) {
-				matcher = PATTERN_CMA.matcher(currentLine);
-				if(matcher.find()) {
-					out("found CMA match: " + matcher.group(1));
-				}
-				currentLine = br.readLine();
-			}
-
-			if (pageCount == 1) {
 				
+			int blCounter = 0;
+			currentStartPage = 1;
+			String currentBL = "";
+
+			for(int page = 1; page <= pageCount; page ++) {
+				boolean foundBL = false;
+				pdfStripper.setStartPage(page);
+				pdfStripper.setEndPage(page);
+				String text = pdfStripper.getText(doc);
+
+				//Extract page to textfile
+				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+				bw.write(text);
+				bw.close();
+				
+				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+				BufferedReader br = new BufferedReader(new FileReader(textfile));
+				String currentLine = br.readLine();
+
+				while(currentLine != null) {
+					matcher = PATTERN_CMA.matcher(currentLine);
+					if(matcher.find()) {
+						foundBL = true;
+						currentBL = matcher.group(1);
+						out("found BL " + currentBL);
+						if(pageCount == 1) {
+							out("saving one-page file");
+							doc.save(LOCAL_FILE_PATH + currentBL + ".pdf");
+							break;
+						}
+						if(page == 1) {
+							currentBL = matcher.group(1);
+							out("==>> found first BL in page one " + currentBL);
+							break;
+						}
+						if(!currentBL.equals(matcher.group(1))) {
+							out("the BL found does not match the previously saved BL ");
+							out(matcher.group(1) + " <=== NOT EQUAL TO ===> " + currentBL);
+							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
+							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
+						} else if(page == pageCount) {
+							splitDocAndRename(doc, currentStartPage, page, currentBL);
+						}
+						currentBL = matcher.group(1);
+						blCounter++;
+						break;
+					}
+					currentLine = br.readLine();
+				}
+				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+				br.close();
 			}
-			br.close();
 		} catch (Exception e) {
 			out("We got an exception from processCMA " + e);
 			e.printStackTrace();
