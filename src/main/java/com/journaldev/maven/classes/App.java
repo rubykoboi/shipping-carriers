@@ -36,7 +36,7 @@ public class App {
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "([^a-zA-Z0-9|\\s*][A-Z]{3}[0-9]{7})[\\s*|^a-zA-Z0-9]";
 	private final static String MAERSK_BL_REGEX = "";
-	private final static String MSC_BL_REGEX = "";
+	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDUOD\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 
 	public static Pattern PATTERN_CMA;
@@ -98,10 +98,10 @@ public class App {
 //					out("processing MAERSK type");
 ////					processMAERSK(pageCount);
 //					break;
-//				case MSC_TYPE:
-//					out("processing MSC type");
-////					processMSC(pageCount);
-//					break;
+				case MSC_TYPE:
+					out("processing MSC type");
+					processMSC(pageCount);
+					break;
 				case TURKON_TYPE:
 					out("processing TURKON type");
 					processTURKON(pageCount);
@@ -232,29 +232,49 @@ public class App {
 	
 	public static void processMSC(int pageCount) {
 		try {
+			String fileName = currentFile.getAbsolutePath();
+			matcher = PATTERN_MSC.matcher(fileName);
+			out("filename is " + fileName);
+			String currentBL = "";
+			
+			if (matcher.find()) {
+				currentBL = matcher.group(1);
+				out("we found the BL in the name ==> " + currentBL);
+				// save matched and extract the page with pattern
+				// save the page with the bill of lading and discard the rest
+				
+			}
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
-			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
-			
-			// Extract page to textfile
-			doc.close();
-			bw.write(text);
-			bw.close();
-			
-			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
-			BufferedReader br = new BufferedReader(new FileReader(textfile));
-			String currentLine = br.readLine();
-			out("before MSC while");
-			while(currentLine != null) {
-				matcher = PATTERN_MSC.matcher(currentLine);
-				if(matcher.find()) {
-					out("found MSC match: " + matcher.group(1));
+			for(int page = 1; page <= pageCount; page ++) {
+				currentStartPage = page;
+				pdfStripper.setStartPage(page);
+				pdfStripper.setEndPage(page);
+				String text = pdfStripper.getText(doc);
+
+				// EXTRACT PAGE TO TEXT FILE
+				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+				bw.write(text);
+				bw.close();
+				
+				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+				BufferedReader br = new BufferedReader(new FileReader(textfile));
+				String currentLine = br.readLine();
+				int counter = 0;
+				while(currentLine != null) {
+					out("["+counter+++"] " + currentLine);
+					if(currentLine.contains(currentBL)) {
+						out("currentStartPage is " + currentStartPage);
+						splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+						break;
+					}
+					currentLine = br.readLine();
 				}
-				currentLine = br.readLine();
+				br.close();
 			}
-			br.close();
+			
+			
 		} catch (Exception e) {
 			out("We got an exception from processMSC " + e);
 			e.printStackTrace();
