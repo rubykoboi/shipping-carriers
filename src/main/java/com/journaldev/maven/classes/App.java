@@ -34,10 +34,11 @@ public class App {
 	private List<String> filesList;
 	
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
-	private final static String EVERGREEN_BL_REGEX = "([^a-zA-Z0-9|\\s*][A-Z]{3}[0-9]{7})[\\s*|^a-zA-Z0-9]";
+	private final static String EVERGREEN_BL_REGEX = "(EGLV\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDUOD\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
+	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
 	public static Pattern PATTERN_CMA;
 	public static Pattern PATTERN_EVERGREEN;
@@ -56,9 +57,8 @@ public class App {
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				try {
-					new App();
-				} catch (Exception e) {e.printStackTrace();}
+				try { new App(); }
+				catch (Exception e) {e.printStackTrace();}
 			}
 		});
 	}
@@ -90,10 +90,10 @@ public class App {
 					out("processing CMA type");
 					processCMA(pageCount);
 					break;
-//				case EVERGREEN_TYPE:
-//					out("processing EVERGREEN type");
-////					processEVERGREEN(pageCount);
-//					break;
+				case EVERGREEN_TYPE:
+					out("processing EVERGREEN type");
+					processEVERGREEN(pageCount);
+					break;
 //				case MAERSK_TYPE:
 //					out("processing MAERSK type");
 ////					processMAERSK(pageCount);
@@ -135,11 +135,11 @@ public class App {
 				String text = pdfStripper.getText(doc);
 
 				// EXTRACT PAGE TO TEXT FILE
-				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+				BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 				bw.write(text);
 				bw.close();
 				
-				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+				File textfile = new File(TEXTFILE_PATH);
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 
@@ -174,24 +174,33 @@ public class App {
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
 			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 			
-			//Extract page to textfile
+			// EXTRACT PAGE TO TEXT FILE
 			doc.close();
 			bw.write(text);
 			bw.close();
+			String currentBL = "";
 			
-			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			File textfile = new File(TEXTFILE_PATH);
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before EVERGREEN while");
+			boolean foundProof = false;
 			while(currentLine != null) {
 				matcher = PATTERN_EVERGREEN.matcher(currentLine);
-				if(matcher.find()) {
-					out("found EVERGREEN match: " + matcher.group(1));
+				if(!foundProof) {
+					if(currentLine.contains("BILL OF LADING NO. ")) {
+						foundProof = true;
+						out("this is an invoice");
+					}
+				} else if(matcher.find()) {
+					currentBL = matcher.group(1);
+					out("found EVERGREEN match: " + currentBL);
 				}
 				currentLine = br.readLine();
 			}
+			// IF THERE IS NO "BILL OF LADING NO. ," skip file
 			br.close();
 		} catch (Exception e) {
 			out("We got an exception from processEVERGREEN " + e);
@@ -205,14 +214,14 @@ public class App {
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
 			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 			
-			//Extract page to textfile
+			// EXTRACT PAGE TO TEXT FILE
 			doc.close();
 			bw.write(text);
 			bw.close();
 			
-			File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+			File textfile = new File(TEXTFILE_PATH);
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			out("before MAERSK while");
@@ -234,47 +243,37 @@ public class App {
 		try {
 			String fileName = currentFile.getAbsolutePath();
 			matcher = PATTERN_MSC.matcher(fileName);
-			out("filename is " + fileName);
 			String currentBL = "";
 			
-			if (matcher.find()) {
-				currentBL = matcher.group(1);
-				out("we found the BL in the name ==> " + currentBL);
-				// save matched and extract the page with pattern
-				// save the page with the bill of lading and discard the rest
-				
-			}
+			if (matcher.find()) currentBL = matcher.group(1);
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 				
 			for(int page = 1; page <= pageCount; page ++) {
-				currentStartPage = page;
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
 
 				// EXTRACT PAGE TO TEXT FILE
-				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+				BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 				bw.write(text);
 				bw.close();
 				
-				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+				File textfile = new File(TEXTFILE_PATH);
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 				int counter = 0;
 				while(currentLine != null) {
 					out("["+counter+++"] " + currentLine);
 					if(currentLine.contains(currentBL)) {
-						out("currentStartPage is " + currentStartPage);
-						splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+						splitDocAndRename(doc, page, page, currentBL);
 						break;
 					}
 					currentLine = br.readLine();
 				}
 				br.close();
 			}
-			
-			
+			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processMSC " + e);
 			e.printStackTrace();
@@ -296,12 +295,12 @@ public class App {
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
 
-				//Extract page to textfile
-				BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt")); // TO-DO: Update to proper folder path
+				// EXTRACT PAGE TO TEXT FILE
+				BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 				bw.write(text);
 				bw.close();
 				
-				File textfile = new File("C:\\SC\\text.txt"); // TO-DO: Update to proper folder path
+				File textfile = new File(TEXTFILE_PATH);
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 
@@ -362,14 +361,14 @@ public class App {
 			PDDocument doc = PDDocument.load(file);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter("C:\\SC\\text.txt"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 			
 			//Extract pdf to textfile
 			doc.close();
 			bw.write(text);
 			bw.close();
 			
-			File textfile = new File("C:\\SC\\text.txt");
+			File textfile = new File(TEXTFILE_PATH);
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			
