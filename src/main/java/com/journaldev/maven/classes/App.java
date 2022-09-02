@@ -38,7 +38,7 @@ public class App {
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "";
-	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDUOD\\d{6})";
+	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
@@ -117,6 +117,10 @@ public class App {
 				default:
 					break;
 			}
+			doc.close();
+			currentFile.delete();
+			filesList.remove(a);
+			a--;
 		}
 		
 		/**
@@ -159,17 +163,18 @@ public class App {
 						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + newBL + ".pdf");
 						else if(page == 1) currentBL = newBL;
 						else if(!currentBL.equals(newBL)) {
-							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, "CMDU"+currentBL);
-							else splitDocAndRename(doc, currentStartPage, currentStartPage, "CMDU"+currentBL);
+							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
+							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
-						} else if(page == pageCount) splitDocAndRename(doc, currentStartPage, page, "CMDU"+currentBL);
+						} else if(page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
 						break;
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, "CMDU"+currentBL);
+				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
 				br.close();
 			}
+			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processCMA " + e);
 			e.printStackTrace();
@@ -184,7 +189,8 @@ public class App {
 			String currentBL = "";
 			
 			if (matcher.find()) currentBL = matcher.group(1);
-			doc.save(new File(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf"));
+			doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
+			
 			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processCOSCO " + e);
@@ -252,6 +258,7 @@ public class App {
 				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL);
 				br.close();
 			}
+			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processEVERGREEN " + e);
 			e.printStackTrace();
@@ -314,7 +321,6 @@ public class App {
 				String currentLine = br.readLine();
 				int counter = 0;
 				while(currentLine != null) {
-					out("["+counter+++"] " + currentLine);
 					if(currentLine.contains(currentBL)) {
 						splitDocAndRename(doc, page, page, currentBL);
 						break;
@@ -379,6 +385,7 @@ public class App {
 			e.printStackTrace();
 		}
 	}
+
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
 		out("--------------SPLITTING DOCUMENT-------------------------");
