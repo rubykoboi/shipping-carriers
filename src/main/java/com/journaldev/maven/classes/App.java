@@ -95,7 +95,7 @@ public class App {
 					processCMA(pageCount);
 					break;
 				case COSCO_TYPE:
-					out("processing CMA type");
+					out("processing COSCO type");
 					processCOSCO();
 					break;
 				case EVERGREEN_TYPE:
@@ -178,13 +178,17 @@ public class App {
 
 	public static void processCOSCO() {
 		try {
+			out("we are processing COSCO");
 			String fileName = currentFile.getAbsolutePath();
+			PDDocument doc = PDDocument.load(currentFile);
 			matcher = PATTERN_COSCO.matcher(fileName);
 			String currentBL = "";
 			
 			if (matcher.find()) currentBL = matcher.group(1);
-			File file = new File(fileName);
-			file.renameTo(new File(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf"));
+			out("we found a match? ==["+currentBL+"]");
+			out("filename is " +fileName+"");
+			doc.save(new File(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf"));
+			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processCOSCO " + e);
 			e.printStackTrace();
@@ -424,9 +428,10 @@ public class App {
 			
 			for (int line = 0; currentLine != null; line ++) {
 //				out(line+": "+currentLine);
+				if(currentLine.toUpperCase().contains("COSCO"))	return COSCO_TYPE;
+				if(currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 				if(currentLine.toUpperCase().contains("INVOICING AND DISPUTES"))	return MSC_TYPE;
 				if(currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
-				if(currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 				currentLine = br.readLine();
 			}
 			br.close();
