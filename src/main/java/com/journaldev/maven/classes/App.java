@@ -24,23 +24,26 @@ import org.apache.pdfbox.text.PDFTextStripper;
 public class App {
 
 	private final static int CMA_TYPE = 1;
-	private final static int EVERGREEN_TYPE = 2;
-	private final static int MAERSK_TYPE = 3;
-	private final static int MSC_TYPE = 4;
-	private final static int TURKON_TYPE = 5;
-	private final static String[] TYPE = {"CMA", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
+	private final static int COSCO_TYPE = 2;
+	private final static int EVERGREEN_TYPE = 3;
+	private final static int MAERSK_TYPE = 4;
+	private final static int MSC_TYPE = 5;
+	private final static int TURKON_TYPE = 6;
+	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	private final static String ULTIMATE_FILE_PATH = "C:\\SC";
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
 	private List<String> filesList;
 	
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
-	private final static String EVERGREEN_BL_REGEX = "(EGLV\\d{12})\\s*";
+	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
+	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDUOD\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
 	public static Pattern PATTERN_CMA;
+	public static Pattern PATTERN_COSCO;
 	public static Pattern PATTERN_EVERGREEN;
 	public static Pattern PATTERN_MAERSK;
 	public static Pattern PATTERN_MSC;
@@ -70,6 +73,7 @@ public class App {
 		int pageCount;
 		// INITIALIZE ALL BL# PATTERNS
 		PATTERN_CMA = Pattern.compile(CMA_BL_REGEX);
+		PATTERN_COSCO = Pattern.compile(COSCO_BL_REGEX);
 		PATTERN_EVERGREEN = Pattern.compile(EVERGREEN_BL_REGEX);
 		PATTERN_MAERSK = Pattern.compile(MAERSK_BL_REGEX);
 		PATTERN_MSC = Pattern.compile(MSC_BL_REGEX);
@@ -89,6 +93,10 @@ public class App {
 				case CMA_TYPE:
 					out("processing CMA type");
 					processCMA(pageCount);
+					break;
+				case COSCO_TYPE:
+					out("processing CMA type");
+					processCOSCO();
 					break;
 				case EVERGREEN_TYPE:
 					out("processing EVERGREEN type");
@@ -127,9 +135,9 @@ public class App {
 				
 			currentStartPage = 1;
 			String currentBL = "", newBL = "";
-
+			boolean foundBL;
 			for(int page = 1; page <= pageCount; page ++) {
-				boolean foundBL = false;
+				foundBL = false;
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
@@ -151,15 +159,15 @@ public class App {
 						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + newBL + ".pdf");
 						else if(page == 1) currentBL = newBL;
 						else if(!currentBL.equals(newBL)) {
-							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
-							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, "CMDU"+currentBL);
+							else splitDocAndRename(doc, currentStartPage, currentStartPage, "CMDU"+currentBL);
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
-						} else if(page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+						} else if(page == pageCount) splitDocAndRename(doc, currentStartPage, page, "CMDU"+currentBL);
 						break;
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, "CMDU"+currentBL);
 				br.close();
 			}
 		} catch (Exception e) {
@@ -168,40 +176,91 @@ public class App {
 		}
 	}
 
+	public static void processCOSCO() {
+		try {
+			String fileName = currentFile.getAbsolutePath();
+			matcher = PATTERN_COSCO.matcher(fileName);
+			String currentBL = "";
+			
+			if (matcher.find()) currentBL = matcher.group(1);
+			File file = new File(fileName);
+			file.renameTo(new File(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf"));
+		} catch (Exception e) {
+			out("We got an exception from processCOSCO " + e);
+			e.printStackTrace();
+		}
+	}
+	
 	public static void processEVERGREEN(int pageCount) {
 		try {
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
+			
+			currentStartPage = 1;
+			String currentBL = "", newBL = "";
+			boolean foundProof = false, foundBL;
+			
+			for(int page = 1; page <= pageCount; page ++) {
+				foundBL = false;
+				out("processing page " + page);
+				newBL = "";
+				pdfStripper.setStartPage(page);
+				pdfStripper.setEndPage(page);
+				String text = pdfStripper.getText(doc);
+
+				// EXTRACT PAGE TO TEXT FILE
+				BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
+				bw.write(text);
+				bw.close();
 				
-			String text = pdfStripper.getText(doc);
-			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
-			
-			// EXTRACT PAGE TO TEXT FILE
-			doc.close();
-			bw.write(text);
-			bw.close();
-			String currentBL = "";
-			
-			File textfile = new File(TEXTFILE_PATH);
-			BufferedReader br = new BufferedReader(new FileReader(textfile));
-			String currentLine = br.readLine();
-			out("before EVERGREEN while");
-			boolean foundProof = false;
-			while(currentLine != null) {
-				matcher = PATTERN_EVERGREEN.matcher(currentLine);
-				if(!foundProof) {
-					if(currentLine.contains("BILL OF LADING NO. ")) {
-						foundProof = true;
-						out("this is an invoice");
+				File textfile = new File(TEXTFILE_PATH);
+				BufferedReader br = new BufferedReader(new FileReader(textfile));
+				String currentLine = br.readLine();
+
+				while(currentLine != null) {
+					matcher = PATTERN_EVERGREEN.matcher(currentLine);
+					if(!foundProof) {
+						// IF THERE IS NO "BILL OF LADING NO. ," just ignore
+						if(currentLine.contains("BILL OF LADING NO. ")) {
+							foundProof = true;
+							out("this is an invoice");
+						}
+					} else if(matcher.find()) {
+						foundBL = true;
+						newBL = matcher.group(1);
+						out("found EVERGREEN match: " + newBL);
+						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + "EGLV" + newBL + ".pdf");
+						else if(page == 1) break;
+						else if(currentBL == newBL) break; // move on to the next page
+						else if(currentBL == "") {
+							out("the currentBL is blank...=="+currentBL+"==");
+							out("we're moving on to the next page, page "+ page);
+							currentStartPage = page;
+							page--;
+							currentBL = newBL;
+							break;
+						} else {
+							splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
+							currentStartPage = page;
+						}
+						currentBL = newBL;
+					} else if(!currentBL.equals("") && currentLine.contains(currentBL)) {
+						out("we did find a match");
+						out(currentLine);
+						foundBL = true;
+						break;					
 					}
-				} else if(matcher.find()) {
-					currentBL = matcher.group(1);
-					out("found EVERGREEN match: " + currentBL);
+					currentLine = br.readLine();
 				}
-				currentLine = br.readLine();
+				out("foundBL " + foundBL + " AND currentBL = ["+currentBL+"]");
+				if(!foundBL && newBL != "") {
+					out("===========we didin't find a BL but the new BL is not empty and the currentBL is also not empty?? newBL["+newBL+"] and currentBL["+currentBL+"]");
+					splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
+					currentStartPage = page;
+				}
+				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL);
+				br.close();
 			}
-			// IF THERE IS NO "BILL OF LADING NO. ," skip file
-			br.close();
 		} catch (Exception e) {
 			out("We got an exception from processEVERGREEN " + e);
 			e.printStackTrace();
@@ -331,6 +390,7 @@ public class App {
 	}
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
+		out("--------------SPLITTING DOCUMENT-------------------------");
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
@@ -374,9 +434,9 @@ public class App {
 			
 			for (int line = 0; currentLine != null; line ++) {
 //				out(line+": "+currentLine);
-				if(currentLine.contains("Invoicing and Disputes"))	return MSC_TYPE;
-				if(currentLine.contains("Turkon"))	return TURKON_TYPE;
-				if(currentLine.contains("Evergreen")) return EVERGREEN_TYPE;
+				if(currentLine.toUpperCase().contains("INVOICING AND DISPUTES"))	return MSC_TYPE;
+				if(currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
+				if(currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 				currentLine = br.readLine();
 			}
 			br.close();
