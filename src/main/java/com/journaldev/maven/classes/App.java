@@ -202,7 +202,6 @@ public class App {
 			
 			for(int page = 1; page <= pageCount; page ++) {
 				foundBL = false;
-				out("processing page " + page);
 				newBL = "";
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
@@ -221,42 +220,33 @@ public class App {
 					matcher = PATTERN_EVERGREEN.matcher(currentLine);
 					if(!foundProof) {
 						// IF THERE IS NO "BILL OF LADING NO. ," just ignore
-						if(currentLine.contains("BILL OF LADING NO. ")) {
-							foundProof = true;
-							out("this is an invoice");
-						}
+						if(currentLine.contains("BILL OF LADING NO. ")) foundProof = true;
 					} else if(matcher.find()) {
 						foundBL = true;
 						newBL = matcher.group(1);
-						out("found EVERGREEN match: " + newBL);
 						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + "EGLV" + newBL + ".pdf");
 						else if(page == 1) break;
-						else if(currentBL == newBL) break; // move on to the next page
-						else if(currentBL == "") {
-							out("the currentBL is blank...=="+currentBL+"==");
-							out("we're moving on to the next page, page "+ page);
+						else if(currentBL == newBL) break; // IF SAME BL IS FOUND, MOVE ON TO THE NEXT PAGE
+						else if(currentBL == "") { // THERE WERE NO BLs FOUND BEFORE THIS NEW ONE, SO DISCARD PREVIOUS PAGES
 							currentStartPage = page;
 							page--;
 							currentBL = newBL;
 							break;
-						} else {
+						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
 							splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
 							currentStartPage = page;
 						}
 						currentBL = newBL;
-					} else if(!currentBL.equals("") && currentLine.contains(currentBL)) {
-						out("we did find a match");
-						out(currentLine);
+					} else if(!currentBL.equals("") && currentLine.contains(currentBL)) { // FOLLOWING PAGES WITH THE SAME BL BUT NOT THE MAIN INVOICE PAGE
 						foundBL = true;
 						break;					
 					}
 					currentLine = br.readLine();
 				}
-				out("foundBL " + foundBL + " AND currentBL = ["+currentBL+"]");
-				if(!foundBL && newBL != "") {
-					out("===========we didin't find a BL but the new BL is not empty and the currentBL is also not empty?? newBL["+newBL+"] and currentBL["+currentBL+"]");
+				if(!foundBL && currentBL != "") { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
 					splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
 					currentStartPage = page;
+					currentBL = "";
 				}
 				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL);
 				br.close();
