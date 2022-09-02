@@ -178,15 +178,12 @@ public class App {
 
 	public static void processCOSCO() {
 		try {
-			out("we are processing COSCO");
 			String fileName = currentFile.getAbsolutePath();
 			PDDocument doc = PDDocument.load(currentFile);
 			matcher = PATTERN_COSCO.matcher(fileName);
 			String currentBL = "";
 			
 			if (matcher.find()) currentBL = matcher.group(1);
-			out("we found a match? ==["+currentBL+"]");
-			out("filename is " +fileName+"");
 			doc.save(new File(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf"));
 			doc.close();
 		} catch (Exception e) {
