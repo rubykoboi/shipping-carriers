@@ -43,7 +43,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
-	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTV][DNRWY]\\d{5})\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
 	public static Pattern PATTERN_CMA;
@@ -177,6 +177,7 @@ public class App {
 					
 					if(shipMatcher.find()) {
 						shipId = shipMatcher.group(1);
+						out("found a ship ID on the following line:\n["+currentLine+"]");
 					}
 					if(matcher.find()) {
 						foundBL = true;
@@ -458,6 +459,9 @@ public class App {
 
 					if(shipMatcher.find()) {
 						shipId = shipMatcher.group(1);
+					} if(currentLine.contains("TR48384")) {
+						shipId = "TR48384";
+						out("we found shipment order...");
 					}
 					if(matcher.find()) {
 						foundBL = true;
@@ -475,6 +479,7 @@ public class App {
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
 						currentBL = matcher.group(1);
+						shipId = getFileName(br, currentBL);
 						blCounter++;
 						break;
 					}
@@ -499,11 +504,15 @@ public class App {
 	public static String getFileName(BufferedReader br, String BL) throws Exception {
 		out("---getting file name ----");
 		String currentLine = br.readLine();
+		String ship;
 		while(currentLine != null) {
 			shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 			if(shipMatcher.find()) {
 				out(" OoO 😲 !!! WE FOUND A SHIPMENT ID, HALLELUJAH!!");
-				return shipMatcher.group(1);
+				ship = shipMatcher.group(1);
+				out("It's " + ship);
+				out("from line ["+currentLine+"]");
+				return ship;
 			}
 			currentLine = br.readLine();
 		}
@@ -513,6 +522,7 @@ public class App {
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
 		out("--------------SPLITTING DOCUMENT-------------------------");
+		out("with new name: " + newName);
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
