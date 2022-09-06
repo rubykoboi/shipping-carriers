@@ -220,11 +220,36 @@ public class App {
 		try {
 			String fileName = currentFile.getAbsolutePath();
 			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			
 			matcher = PATTERN_COSCO.matcher(fileName);
 			String currentBL = "";
+			String shipId = "";
+			
+			String text = pdfStripper.getText(doc);
+
+			// EXTRACT PAGE TO TEXT FILE
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File(TEXTFILE_PATH);
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
+			String currentLine = br.readLine();
+
+			while(currentLine != null) {
+				shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+				
+				if(shipMatcher.find()) {
+					shipId = matcher.group(1);
+					break;
+				}
+				currentLine = br.readLine();
+			}
 			
 			if (matcher.find()) currentBL = matcher.group(1);
-			doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
+			if(!shipId.isBlank()) doc.save(LOCAL_FILE_PATH+shipId+".pdf");
+			else doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
 			// TO-DO: CALL SEARCH AND MERGE FROM THIS BLOCK
 			doc.close();
 		} catch (Exception e) {
