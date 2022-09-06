@@ -265,6 +265,8 @@ public class App {
 			
 			currentStartPage = 1;
 			String currentBL = "", newBL = "";
+			String shipId = "";
+			
 			boolean foundProof = false, foundBL;
 			
 			for(int page = 1; page <= pageCount; page ++) {
@@ -285,13 +287,18 @@ public class App {
 
 				while(currentLine != null) {
 					matcher = PATTERN_EVERGREEN.matcher(currentLine);
+					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+					
 					if(!foundProof) {
 						// IF THERE IS NO "BILL OF LADING NO. ," just ignore
 						if(currentLine.contains("BILL OF LADING NO. ")) foundProof = true;
 					} else if(matcher.find()) {
 						foundBL = true;
 						newBL = matcher.group(1);
-						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + "EGLV" + newBL + ".pdf");
+						if(pageCount == 1) {
+							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
+							else doc.save(LOCAL_FILE_PATH + "EGLV" + newBL + ".pdf");
+						}
 						else if(page == 1) break;
 						else if(currentBL == newBL) break; // IF SAME BL IS FOUND, MOVE ON TO THE NEXT PAGE
 						else if(currentBL == "") { // THERE WERE NO BLs FOUND BEFORE THIS NEW ONE, SO DISCARD PREVIOUS PAGES
@@ -300,7 +307,8 @@ public class App {
 							currentBL = newBL;
 							break;
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
-							splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
+							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
 							currentStartPage = page;
 						}
 						currentBL = newBL;
@@ -311,11 +319,13 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if(!foundBL && currentBL != "") { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
-					splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
+					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
 					currentStartPage = page;
 					currentBL = "";
 				}
-				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL, EVERGREEN_TYPE);
+				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, shipId, EVERGREEN_TYPE);
+				else splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL, EVERGREEN_TYPE);
 				br.close();
 			}
 			doc.close();
