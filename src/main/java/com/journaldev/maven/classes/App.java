@@ -241,7 +241,7 @@ public class App {
 				shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 				
 				if(shipMatcher.find()) {
-					shipId = matcher.group(1);
+					shipId = shipMatcher.group(1);
 					break;
 				}
 				currentLine = br.readLine();
