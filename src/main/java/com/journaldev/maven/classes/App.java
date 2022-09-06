@@ -175,29 +175,29 @@ public class App {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 					
 					if(shipMatcher.find()) {
-						shipId = matcher.group(1);
+						shipId = shipMatcher.group(1);
 					}
 					if(matcher.find()) {
 						foundBL = true;
 						newBL = matcher.group(1);
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
-							else doc.save(LOCAL_FILE_PATH + newBL + ".pdf");
+							else doc.save(LOCAL_FILE_PATH + getFileName(br, newBL) + ".pdf");
 						}
 						else if(page == 1) currentBL = newBL;
 						else if(!currentBL.equals(newBL)) {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, currentBL, CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), CMA_TYPE);
 							}
 							else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), CMA_TYPE);
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						} else if(page == pageCount) {
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-							else splitDocAndRename(doc, currentStartPage, page, currentBL, CMA_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page, getFileName(br, currentBL), CMA_TYPE);
 						}
 						break;
 					}
@@ -205,7 +205,7 @@ public class App {
 				}
 				if(!foundBL && page == pageCount) { 
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page, currentBL,CMA_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page, currentBL, CMA_TYPE);
 				}
 				br.close();
 			}
