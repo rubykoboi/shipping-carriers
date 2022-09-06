@@ -32,7 +32,8 @@ public class App {
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	private final static String ULTIMATE_FILE_PATH = "C:\\SC\\";
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
-	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
+//	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
+	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private List<String> filesList;
 	private static List<String> ordersList;
 	
@@ -42,7 +43,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
-	private final static String SHIP_ID_REGEX = "\\s*^[A-Za-z0-9]([a-zA-Z]{2}\\d{5})^[A-Za-z0-9]\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTV][DNRWY]\\d{5})\\s*";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
 	public static Pattern PATTERN_CMA;
@@ -183,21 +184,25 @@ public class App {
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
 							else doc.save(LOCAL_FILE_PATH + getFileName(br, newBL) + ".pdf");
+							shipId = "";
 						}
 						else if(page == 1) currentBL = newBL;
 						else if(!currentBL.equals(newBL)) {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
 								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), CMA_TYPE);
+								shipId = "";
 							}
 							else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
 								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), CMA_TYPE);
+								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						} else if(page == pageCount) {
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
 							else splitDocAndRename(doc, currentStartPage, page, getFileName(br, currentBL), CMA_TYPE);
+							shipId = "";
 						}
 						break;
 					}
@@ -206,6 +211,7 @@ public class App {
 				if(!foundBL && page == pageCount) { 
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page, currentBL, CMA_TYPE);
+					shipId = "";
 				}
 				br.close();
 			}
@@ -250,6 +256,7 @@ public class App {
 			if (matcher.find()) currentBL = matcher.group(1);
 			if(!shipId.isBlank()) doc.save(LOCAL_FILE_PATH+shipId+".pdf");
 			else doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
+			shipId = "";
 			// TO-DO: CALL SEARCH AND MERGE FROM THIS BLOCK
 			doc.close();
 		} catch (Exception e) {
@@ -301,6 +308,7 @@ public class App {
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
 							else doc.save(LOCAL_FILE_PATH + getFileName(br, "EGLV" + newBL) + ".pdf");
+							shipId = "";
 						}
 						else if(page == 1) break;
 						else if(currentBL == newBL) break; // IF SAME BL IS FOUND, MOVE ON TO THE NEXT PAGE
@@ -312,6 +320,7 @@ public class App {
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
 							else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, "EGLV"+currentBL), EVERGREEN_TYPE);
+							shipId = "";
 							currentStartPage = page;
 						}
 						currentBL = newBL;
@@ -324,11 +333,13 @@ public class App {
 				if(!foundBL && currentBL != "") { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
+					shipId = "";
 					currentStartPage = page;
 					currentBL = "";
 				}
 				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, shipId, EVERGREEN_TYPE);
 				else splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL, EVERGREEN_TYPE);
+				shipId = "";
 				br.close();
 			}
 			doc.close();
@@ -402,6 +413,7 @@ public class App {
 					if(currentLine.contains(currentBL)) {
 						if(!shipId.isEmpty()) splitDocAndRename(doc, page, page, shipId, MSC_TYPE);
 						else splitDocAndRename(doc, page, page, getFileName(br, currentBL), MSC_TYPE);
+						shipId = "";
 						break;
 					}
 					currentLine = br.readLine();
@@ -453,10 +465,12 @@ public class App {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, TURKON_TYPE);
 								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), TURKON_TYPE);
+								shipId = "";
 							}
 							else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, TURKON_TYPE);
 								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), TURKON_TYPE);
+								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
@@ -467,8 +481,10 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if(!foundBL && page == pageCount) {
+					out("didn't find BL and page = page count ");
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, TURKON_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
+					shipId = "";
 				}
 				br.close();
 			}
@@ -481,15 +497,16 @@ public class App {
 	}
 	
 	public static String getFileName(BufferedReader br, String BL) throws Exception {
+		out("---getting file name ----");
 		String currentLine = br.readLine();
 		while(currentLine != null) {
 			shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 			if(shipMatcher.find()) {
+				out(" OoO 😲 !!! WE FOUND A SHIPMENT ID, HALLELUJAH!!");
 				return shipMatcher.group(1);
 			}
 			currentLine = br.readLine();
 		}
-		
 		return BL;
 	}
 
@@ -571,11 +588,20 @@ public class App {
 
 				switch (type) {
 					case EVERGREEN_TYPE:
-						if (filename.contains("ID") || filename.contains("TR")) continue;
+						if (filename.contains("ID") || filename.contains("TR")) {
+							doc.close();
+							continue;
+						}
 					case MAERSK_TYPE:
-						if (!filename.contains("MAERSK")) continue;
+						if (!filename.contains("MAERSK")) {
+							doc.close();
+							continue;
+						}
 					case TURKON_TYPE:
-						if (!filename.contains("TR")) continue;
+						if (!filename.contains("TR")) {
+							doc.close();
+							continue;
+						}
 				}
 				// EXTRACT TO TEXTFILE
 				bw.write(text);
