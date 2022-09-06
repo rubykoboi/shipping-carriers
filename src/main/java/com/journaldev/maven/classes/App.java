@@ -290,7 +290,7 @@ public class App {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 
 					if(shipMatcher.find()) {
-						shipId = matcher.group(1);
+						shipId = shipMatcher.group(1);
 					}
 					if(!foundProof) {
 						// IF THERE IS NO "BILL OF LADING NO. ," just ignore
@@ -300,7 +300,7 @@ public class App {
 						newBL = matcher.group(1);
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
-							else doc.save(LOCAL_FILE_PATH + "EGLV" + newBL + ".pdf");
+							else doc.save(LOCAL_FILE_PATH + getFileName(br, "EGLV" + newBL) + ".pdf");
 						}
 						else if(page == 1) break;
 						else if(currentBL == newBL) break; // IF SAME BL IS FOUND, MOVE ON TO THE NEXT PAGE
@@ -311,7 +311,7 @@ public class App {
 							break;
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
-							else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, "EGLV"+currentBL), EVERGREEN_TYPE);
 							currentStartPage = page;
 						}
 						currentBL = newBL;
