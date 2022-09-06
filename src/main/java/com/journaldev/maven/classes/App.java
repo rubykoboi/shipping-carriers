@@ -30,9 +30,11 @@ public class App {
 	private final static int MSC_TYPE = 5;
 	private final static int TURKON_TYPE = 6;
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
-	private final static String ULTIMATE_FILE_PATH = "C:\\SC";
+	private final static String ULTIMATE_FILE_PATH = "C:\\SC\\";
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
+	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 	private List<String> filesList;
+	private static List<String> ordersList;
 	
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
@@ -40,6 +42,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
+	private final static String SHIP_ID_REGEX = "\\s*^[A-Za-z0-9]([a-zA-Z]{2}\\d{5})^[A-Za-z0-9]\\s*";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 
 	public static Pattern PATTERN_CMA;
@@ -48,10 +51,12 @@ public class App {
 	public static Pattern PATTERN_MAERSK;
 	public static Pattern PATTERN_MSC;
 	public static Pattern PATTERN_TURKON;
+	public static Pattern PATTERN_SHIP_ID;
 	
 	public static Matcher matcher;
-	
+	public static Matcher shipMatcher;
 	public static File currentFile;
+	public static File currentOrder;
 	public static int currentStartPage;
 	public static int currentEndPage;
 	
@@ -60,7 +65,12 @@ public class App {
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				try { new App(); }
+				try { 
+					new App(); 
+					BufferedWriter bw = new BufferedWriter(new FileWriter(ULTIMATE_FILE_PATH+"Log.txt"));
+					bw.write(printLog);
+					bw.close();
+				}
 				catch (Exception e) {e.printStackTrace();}
 			}
 		});
@@ -69,6 +79,9 @@ public class App {
 	public App() throws Exception {
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();
+		ordersList = retrieveOrderFiles();
+		out("THERE ARE " + filesList.size() + " FILES IN " + LOCAL_FILE_PATH);
+		out("THERE ARE " + ordersList.size() + " ORDER FILES IN " + ORDERS_FILE_PATH);
 		int fileTypes[] = new int[filesList.size()];
 		int pageCount;
 		// INITIALIZE ALL BL# PATTERNS
@@ -78,7 +91,9 @@ public class App {
 		PATTERN_MAERSK = Pattern.compile(MAERSK_BL_REGEX);
 		PATTERN_MSC = Pattern.compile(MSC_BL_REGEX);
 		PATTERN_TURKON = Pattern.compile(TURKON_BL_REGEX);
+		PATTERN_SHIP_ID = Pattern.compile(SHIP_ID_REGEX);
 
+		// PROCESS ALL FILES: SPLIT AND RENAME WITH ACCORDING B/L #S
 		for(int a=0 ; a<filesList.size(); a++) {
 			currentFile = new File(filesList.get(a));
 			out("read in file ["+a+"] : "+filesList.get(a));
@@ -102,10 +117,10 @@ public class App {
 					out("processing EVERGREEN type");
 					processEVERGREEN(pageCount);
 					break;
-//				case MAERSK_TYPE:
-//					out("processing MAERSK type");
-////					processMAERSK(pageCount);
-//					break;
+				case MAERSK_TYPE:
+					out("processing MAERSK type");
+//					processMAERSK(pageCount);
+					break;
 				case MSC_TYPE:
 					out("processing MSC type");
 					processMSC(pageCount);
@@ -124,11 +139,9 @@ public class App {
 		}
 		
 		/**
-		 * Step 1: Read in one pdf file
-		 * 		2: Determine the type of file
-		 * 		3: Split the file by order
-		 * 		4: Determine the B/L #s
-		 * 		5: Rename the files by B/L #
+		 * Next Steps 	- Read order files
+		 * 				- Look inside and find the matching B/L
+		 * 				- Merge and delete older file
 		 */
 	}
 	
@@ -139,6 +152,8 @@ public class App {
 				
 			currentStartPage = 1;
 			String currentBL = "", newBL = "";
+			String shipId = "";
+			
 			boolean foundBL;
 			for(int page = 1; page <= pageCount; page ++) {
 				foundBL = false;
@@ -157,21 +172,41 @@ public class App {
 
 				while(currentLine != null) {
 					matcher = PATTERN_CMA.matcher(currentLine);
+					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+					
+					if(shipMatcher.find()) {
+						shipId = matcher.group(1);
+					}
 					if(matcher.find()) {
 						foundBL = true;
 						newBL = matcher.group(1);
-						if(pageCount == 1) doc.save(LOCAL_FILE_PATH + newBL + ".pdf");
+						if(pageCount == 1) {
+							if(!shipId.isEmpty()) doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
+							else doc.save(LOCAL_FILE_PATH + newBL + ".pdf");
+						}
 						else if(page == 1) currentBL = newBL;
 						else if(!currentBL.equals(newBL)) {
-							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
-							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+							if(currentStartPage < page-1) {
+								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, currentBL, CMA_TYPE);
+							}
+							else {
+								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, CMA_TYPE);
+							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
-						} else if(page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+						} else if(page == pageCount) {
+							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page, currentBL, CMA_TYPE);
+						}
 						break;
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+				if(!foundBL && page == pageCount) { 
+					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page, currentBL,CMA_TYPE);
+				}
 				br.close();
 			}
 			doc.close();
@@ -190,7 +225,7 @@ public class App {
 			
 			if (matcher.find()) currentBL = matcher.group(1);
 			doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
-			
+			// TO-DO: CALL SEARCH AND MERGE FROM THIS BLOCK
 			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processCOSCO " + e);
@@ -240,7 +275,7 @@ public class App {
 							currentBL = newBL;
 							break;
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
-							splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
+							splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
 							currentStartPage = page;
 						}
 						currentBL = newBL;
@@ -251,11 +286,11 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if(!foundBL && currentBL != "") { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
-					splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL);
+					splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
 					currentStartPage = page;
 					currentBL = "";
 				}
-				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL);
+				if(foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL, EVERGREEN_TYPE);
 				br.close();
 			}
 			doc.close();
@@ -296,6 +331,7 @@ public class App {
 		}
 	}
 	
+	
 	public static void processMSC(int pageCount) {
 		try {
 			String fileName = currentFile.getAbsolutePath();
@@ -322,7 +358,7 @@ public class App {
 				int counter = 0;
 				while(currentLine != null) {
 					if(currentLine.contains(currentBL)) {
-						splitDocAndRename(doc, page, page, currentBL);
+						splitDocAndRename(doc, page, page, currentBL, MSC_TYPE);
 						break;
 					}
 					currentLine = br.readLine();
@@ -365,8 +401,8 @@ public class App {
 					if(matcher.find()) {
 						foundBL = true;
 						if(currentBL != "") {
-							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL);
-							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL);
+							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL, TURKON_TYPE);
+							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, TURKON_TYPE);
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
 						currentBL = matcher.group(1);
@@ -375,7 +411,7 @@ public class App {
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL);
+				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
 				br.close();
 			}
 			out("found " + blCounter + " in this document");
@@ -387,7 +423,7 @@ public class App {
 	}
 
 	
-	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
+	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
 		out("--------------SPLITTING DOCUMENT-------------------------");
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
@@ -410,11 +446,18 @@ public class App {
 			name = LOCAL_FILE_PATH + newName + "_" + page + ".pdf";
 			File file = new File(name);
 			file.delete();
+			out("deleted file " + name + " as it has already been merged");
+		}
+		
+		// UPDATE TO ACTUALLY MERGE AND DELETE
+		if (searchAndMerge(LOCAL_FILE_PATH + newName + ".pdf", newName, carrierType)) {
+			File file = new File(LOCAL_FILE_PATH + newName + ".pdf");
+			file.delete();
 		}
 	}
 	
 	public static int determineFileType(File file) {
-		out("inside determineFileType method");
+		out("DETERMINING FILE TYPE...");
 		try {
 			PDDocument doc = PDDocument.load(file);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -430,8 +473,7 @@ public class App {
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			
-			for (int line = 0; currentLine != null; line ++) {
-//				out(line+": "+currentLine);
+			while(currentLine != null) {
 				if(currentLine.toUpperCase().contains("COSCO"))	return COSCO_TYPE;
 				if(currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 				if(currentLine.toUpperCase().contains("INVOICING AND DISPUTES"))	return MSC_TYPE;
@@ -446,9 +488,77 @@ public class App {
 		return CMA_TYPE;
 	}
 	
+	public static boolean searchAndMerge(String filePath, String billOfLading, int type) {
+		try {
+			for(int i = 0; i < ordersList.size(); i++) {
+				PDDocument doc = PDDocument.load(new File(ordersList.get(i)));
+				String filename = ordersList.get(i);
+				PDFTextStripper pdfStripper = new PDFTextStripper();
+//				out("===READING " + filename);
+				String text = pdfStripper.getText(doc);
+				BufferedWriter bw = new BufferedWriter(new FileWriter("text.txt"));
+
+				switch (type) {
+					case EVERGREEN_TYPE:
+						if (filename.contains("ID") || filename.contains("TR")) continue;
+					case MAERSK_TYPE:
+						if (!filename.contains("MAERSK")) continue;
+					case TURKON_TYPE:
+						if (!filename.contains("TR")) continue;
+				}
+				// EXTRACT TO TEXTFILE
+				bw.write(text);
+				bw.close();
+				File textfile = new File("text.txt");
+				BufferedReader br = new BufferedReader(new FileReader(textfile));
+				String tempString = br.readLine();
+				
+				// FIND MATCH
+				while (tempString != null) {
+					if(tempString.contains(billOfLading)) {
+						// MATCH THE BILL OF LADING TO THIS ORDER FILE
+						out("we found a match: ");
+						out("BILL OF LADING >> " + billOfLading + ".pdf");
+						out("ORDER FILE >> " + ordersList.get(i));
+//						// MERGE
+//						File file = new File(filePath);
+//						File orderFile = new File(ordersList.get(i));
+//						PDFMergerUtility mergerPdf = new PDFMergerUtility();
+//						mergerPdf.setDestinationFileName(ordersList.get(i));
+//						mergerPdf.addSource(orderFile);
+//						mergerPdf.addSource(file);
+//						mergerPdf.mergeDocuments();
+//						
+//						// RENAME
+//						orderFile.renameTo(new File(ordersList.get(i).substring(0,ordersList.get(i).length()-4)+" BL.pdf"));
+//						
+//						// DELETE FROM LIST
+						ordersList.remove(i);
+						br.close();
+						doc.close();
+						return true;
+					}
+					tempString = br.readLine();
+				}
+				br.close();
+				doc.close();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
 	private static List <String> retrieveAllFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ULTIMATE_FILE_PATH))) {
 			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
+		}
+	}
+	
+	private static List <String> retrieveOrderFiles() throws Exception {
+		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toLowerCase().contains("BL")).collect(Collectors.toList());
 		}
 	}
 	
@@ -456,5 +566,4 @@ public class App {
 		System.out.println(stringToPrint);
 		printLog += stringToPrint + "\n";
 	}
-
 }
