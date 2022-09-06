@@ -602,22 +602,21 @@ public class App {
 					out("ORDER FILE >> " + ordersList.get(i));
 					
 					// MERGE
-//					File file = new File(filePath);
-//					File orderFile = new File(ordersList.get(i));
-//					PDFMergerUtility mergerPdf = new PDFMergerUtility();
-//					mergerPdf.setDestinationFileName(ordersList.get(i));
-//					mergerPdf.addSource(orderFile);
-//					mergerPdf.addSource(file);
-//					mergerPdf.mergeDocuments();
-//					
-//					// RENAME
-//					orderFile.renameTo(new File(ordersList.get(i).substring(0,ordersList.get(i).length()-4)+" BL.pdf"));
-//					
+					File file = new File(filePath);
+					File orderFile = new File(ordersList.get(i));
+					PDFMergerUtility mergerPdf = new PDFMergerUtility();
+					mergerPdf.setDestinationFileName(ordersList.get(i));
+					mergerPdf.addSource(orderFile);
+					mergerPdf.addSource(file);
+					mergerPdf.mergeDocuments();
+					
+					// RENAME
+					orderFile.renameTo(new File(ordersList.get(i).substring(0,ordersList.get(i).length()-4)+" BL.pdf"));
+					
 					// DELETE FROM LIST
 					ordersList.remove(i);
 					return true;
 				}
-				continue;
 //				PDDocument doc = PDDocument.load(new File(ordersList.get(i)));
 //				String filename = ordersList.get(i);
 //				PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -694,7 +693,7 @@ public class App {
 	
 	private static List <String> retrieveOrderFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toLowerCase().contains("BL")).collect(Collectors.toList());
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toUpperCase().contains("BL")).collect(Collectors.toList());
 		}
 	}
 	
