@@ -424,6 +424,7 @@ public class App {
 			int blCounter = 0;
 			currentStartPage = 1;
 			String currentBL = "";
+			String shipId = "";
 
 			for(int page = 1; page <= pageCount; page ++) {
 				boolean foundBL = false;
@@ -442,11 +443,22 @@ public class App {
 
 				while(currentLine != null) {
 					matcher = PATTERN_TURKON.matcher(currentLine);
+					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+
+					if(shipMatcher.find()) {
+						shipId = matcher.group(1);
+					}
 					if(matcher.find()) {
 						foundBL = true;
 						if(currentBL != "") {
-							if(currentStartPage < page-1) splitDocAndRename(doc, currentStartPage, page-1, currentBL, TURKON_TYPE);
-							else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, TURKON_TYPE);
+							if(currentStartPage < page-1) {
+								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, currentBL, TURKON_TYPE);
+							}
+							else {
+								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, TURKON_TYPE);
+							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
 						currentBL = matcher.group(1);
@@ -455,7 +467,10 @@ public class App {
 					}
 					currentLine = br.readLine();
 				}
-				if(!foundBL && page == pageCount) splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
+				if(!foundBL && page == pageCount) {
+					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, TURKON_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
+				}
 				br.close();
 			}
 			out("found " + blCounter + " in this document");
