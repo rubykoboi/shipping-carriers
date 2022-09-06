@@ -288,7 +288,10 @@ public class App {
 				while(currentLine != null) {
 					matcher = PATTERN_EVERGREEN.matcher(currentLine);
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
-					
+
+					if(shipMatcher.find()) {
+						shipId = matcher.group(1);
+					}
 					if(!foundProof) {
 						// IF THERE IS NO "BILL OF LADING NO. ," just ignore
 						if(currentLine.contains("BILL OF LADING NO. ")) foundProof = true;
@@ -372,6 +375,7 @@ public class App {
 			String fileName = currentFile.getAbsolutePath();
 			matcher = PATTERN_MSC.matcher(fileName);
 			String currentBL = "";
+			String shipId = "";
 			
 			if (matcher.find()) currentBL = matcher.group(1);
 			PDDocument doc = PDDocument.load(currentFile);
@@ -392,8 +396,13 @@ public class App {
 				String currentLine = br.readLine();
 				int counter = 0;
 				while(currentLine != null) {
+					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+					if(shipMatcher.find()) {
+						shipId = matcher.group(1);
+					}
 					if(currentLine.contains(currentBL)) {
-						splitDocAndRename(doc, page, page, currentBL, MSC_TYPE);
+						if(!shipId.isEmpty()) splitDocAndRename(doc, page, page, shipId, MSC_TYPE);
+						else splitDocAndRename(doc, page, page, currentBL, MSC_TYPE);
 						break;
 					}
 					currentLine = br.readLine();
