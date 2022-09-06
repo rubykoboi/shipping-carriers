@@ -394,15 +394,14 @@ public class App {
 				File textfile = new File(TEXTFILE_PATH);
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
-				int counter = 0;
 				while(currentLine != null) {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 					if(shipMatcher.find()) {
-						shipId = matcher.group(1);
+						shipId = shipMatcher.group(1);
 					}
 					if(currentLine.contains(currentBL)) {
 						if(!shipId.isEmpty()) splitDocAndRename(doc, page, page, shipId, MSC_TYPE);
-						else splitDocAndRename(doc, page, page, currentBL, MSC_TYPE);
+						else splitDocAndRename(doc, page, page, getFileName(br, currentBL), MSC_TYPE);
 						break;
 					}
 					currentLine = br.readLine();
@@ -446,18 +445,18 @@ public class App {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 
 					if(shipMatcher.find()) {
-						shipId = matcher.group(1);
+						shipId = shipMatcher.group(1);
 					}
 					if(matcher.find()) {
 						foundBL = true;
 						if(currentBL != "") {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, currentBL, TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), TURKON_TYPE);
 							}
 							else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, currentBL, TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), TURKON_TYPE);
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
@@ -479,6 +478,19 @@ public class App {
 			out("We got an exception from processTURKON " + e);
 			e.printStackTrace();
 		}
+	}
+	
+	public static String getFileName(BufferedReader br, String BL) throws Exception {
+		String currentLine = br.readLine();
+		while(currentLine != null) {
+			shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+			if(shipMatcher.find()) {
+				return shipMatcher.group(1);
+			}
+			currentLine = br.readLine();
+		}
+		
+		return BL;
 	}
 
 	
