@@ -35,7 +35,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Program Files/apache-maven-3.8.6/bin/poi-bin-5.2.2/poi-5.2.2.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/apache-maven-3.8.6/bin/poi-bin-5.2.2/poi-ooxml-5.2.2.jar"/>
 	<classpathentry kind="lib" path="C:/Users/safavieh/.m2/repository/org/apache/poi/poi-ooxml/5.2.0/poi-ooxml-5.2.0.jar" sourcepath="C:/Users/safavieh/.m2/repository/org/apache/poi/poi-ooxml/5.2.0/poi-ooxml-5.2.0-sources.jar">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
