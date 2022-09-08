@@ -32,8 +32,8 @@ public class App {
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	private final static String ULTIMATE_FILE_PATH = "C:\\SC\\";
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
-//	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
-	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
+	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
+//	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private List<String> filesList;
 	private static List<String> ordersList;
 	
@@ -101,7 +101,7 @@ public class App {
 
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
 			fileTypes[a] = determineFileType(currentFile);
-			out("Based on our program, this file is type '"+TYPE[fileTypes[a]-1]+"'\n");
+			out("Based on our program, this file is type '"+TYPE[fileTypes[a]]+"'\n");
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
 			
@@ -615,15 +615,15 @@ public class App {
 					File orderFile = new File(fileName);
 					
 					// BEGIN COMMENT -----
-					PDFMergerUtility mergerPdf = new PDFMergerUtility();
-					mergerPdf.setDestinationFileName(fileName);
-					mergerPdf.addSource(orderFile);
-					mergerPdf.addSource(file);
-					mergerPdf.mergeDocuments();
-					
-					out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading");
-					// RENAME
-					orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
+//					PDFMergerUtility mergerPdf = new PDFMergerUtility();
+//					mergerPdf.setDestinationFileName(fileName);
+//					mergerPdf.addSource(orderFile);
+//					mergerPdf.addSource(file);
+//					mergerPdf.mergeDocuments();
+//					
+//					out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading");
+//					// RENAME
+//					orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
 					// END COMMENT -----
 					
 					// DELETE FROM LIST
@@ -681,15 +681,15 @@ public class App {
 						File orderFile = new File(fileName);
 						
 						// BEGIN COMMENT -----
-						PDFMergerUtility mergerPdf = new PDFMergerUtility();
-						mergerPdf.setDestinationFileName(fileName);
-						mergerPdf.addSource(orderFile);
-						mergerPdf.addSource(file);
-						mergerPdf.mergeDocuments();
-
-						out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading--2");
-						// RENAME
-						orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
+//						PDFMergerUtility mergerPdf = new PDFMergerUtility();
+//						mergerPdf.setDestinationFileName(fileName);
+//						mergerPdf.addSource(orderFile);
+//						mergerPdf.addSource(file);
+//						mergerPdf.mergeDocuments();
+//
+//						out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading--2");
+//						// RENAME
+//						orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
 						// END COMMENT -----
 						
 						// DELETE FROM LIST
@@ -698,8 +698,6 @@ public class App {
 						doc.close();
 						return true;
 					}
-					out(tempString);
-					out("does not contain " + shipOrBill);
 					tempString = br.readLine();
 				}
 				br.close();
