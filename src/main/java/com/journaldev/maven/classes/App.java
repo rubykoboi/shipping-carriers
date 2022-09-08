@@ -23,12 +23,12 @@ import org.apache.pdfbox.text.PDFTextStripper;
 
 public class App {
 
-	private final static int CMA_TYPE = 1;
-	private final static int COSCO_TYPE = 2;
-	private final static int EVERGREEN_TYPE = 3;
-	private final static int MAERSK_TYPE = 4;
-	private final static int MSC_TYPE = 5;
-	private final static int TURKON_TYPE = 6;
+	private final static int CMA_TYPE = 0;
+	private final static int COSCO_TYPE = 1;
+	private final static int EVERGREEN_TYPE = 2;
+	private final static int MAERSK_TYPE = 3;
+	private final static int MSC_TYPE = 4;
+	private final static int TURKON_TYPE = 5;
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	private final static String ULTIMATE_FILE_PATH = "C:\\SC\\";
 	private final static String LOCAL_FILE_PATH = "C:\\SC\\";
@@ -331,7 +331,6 @@ public class App {
 							currentStartPage = page;
 							page--;
 							currentBL = newBL;
-							out("going through condition 3");
 							shipId = getFileName(br, currentBL);
 							break;
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
@@ -347,9 +346,7 @@ public class App {
 					}
 					currentLine = br.readLine();
 				}
-//				out("out of the loop and ship ID is ["+shipId+"]");
 				if(!foundBL && !currentBL.isEmpty()) { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
-//					out("we did not find a BL and current BL is not empty");
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
 					shipId = "";
@@ -503,14 +500,12 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if(!foundBL && page == pageCount) {
-//					out("didn't find BL and page = page count ");
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, TURKON_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
 					shipId = "";
 				}
 				br.close();
 			}
-//			out("found " + blCounter + " in this document");
 			doc.close();
 		} catch (Exception e) {
 			out("We got an exception from processTURKON " + e);
@@ -519,15 +514,12 @@ public class App {
 	}
 	
 	public static String getFileName(BufferedReader br, String BL) throws Exception {
-//		out("---getting file name ----");
 		String currentLine = br.readLine();
 		String ship;
 		while(currentLine != null) {
 			shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 			if(shipMatcher.find()) {
-//				out(" OoO 😲 !!! WE FOUND A SHIPMENT ID, HALLELUJAH!!");
 				ship = shipMatcher.group(1);
-//				out("It's " + ship);
 				out("from line ["+currentLine+"]");
 				return ship;
 			}
@@ -538,8 +530,6 @@ public class App {
 
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
-//		out("--------------SPLITTING DOCUMENT-------------------------");
-//		out("with new name: " + newName);
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
@@ -564,7 +554,7 @@ public class App {
 			file.delete();
 			out("["+page+"] "+ name);
 		}
-		out(" as they've already been merged.");
+		out(" as they've already been merged with name "+newName);
 
 		shipMatcher = PATTERN_SHIP_ID.matcher(newName);
 		// UPDATE TO ACTUALLY MERGE AND DELETE
@@ -608,29 +598,32 @@ public class App {
 	
 	public static boolean searchAndMerge(String filePath, String shipOrBill, int type, boolean isShipmentID) {
 		try {
+			String fileName;
 			for(int i = 0; i < ordersList.size(); i++) {
+				fileName = ordersList.get(i);
 				if(isShipmentID) {
-					if(!ordersList.get(i).contains(shipOrBill)) {
+					out("it is a shipment ID");
+					if(!fileName.contains(shipOrBill)) {
 						continue;
 					}
 					out("we found a match: ");
 					out("SHIPMENT ID >> " + shipOrBill + ".pdf");
-					out("ORDER FILE >> " + ordersList.get(i));
+					out("ORDER FILE >> " + fileName);
 					
 					// MERGE
 					File file = new File(filePath);
-					File orderFile = new File(ordersList.get(i));
+					File orderFile = new File(fileName);
 					
 					// BEGIN COMMENT -----
 					PDFMergerUtility mergerPdf = new PDFMergerUtility();
-					mergerPdf.setDestinationFileName(ordersList.get(i));
+					mergerPdf.setDestinationFileName(fileName);
 					mergerPdf.addSource(orderFile);
 					mergerPdf.addSource(file);
 					mergerPdf.mergeDocuments();
 					
 					out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading");
 					// RENAME
-					orderFile.renameTo(new File(ordersList.get(i).substring(0,ordersList.get(i).length()-4)+" BL.pdf"));
+					orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
 					// END COMMENT -----
 					
 					// DELETE FROM LIST
@@ -639,25 +632,36 @@ public class App {
 					return true;
 				}
 				if(isShipmentID) out("THIS LINE SHOULD NOT HAVE BEEN REACHED");
-				
-				PDDocument doc = PDDocument.load(new File(ordersList.get(i)));
-				String filename = ordersList.get(i);
+				out("it is not a shipment ID");
+				PDDocument doc = PDDocument.load(new File(fileName));
 				PDFTextStripper pdfStripper = new PDFTextStripper();
-				out("===READING " + filename);
+				out("===READING " + fileName);
 				String text = pdfStripper.getText(doc);
-				BufferedWriter bw = new BufferedWriter(new FileWriter("text.txt"));
 
 				switch (type) {
 					case EVERGREEN_TYPE:
-						if (filename.contains("ID") || filename.contains("TR")) doc.close();
-						continue;
+						out("EVERGREEN");
+						if (fileName.contains("ID") || fileName.contains("TR")) {
+							doc.close();
+							continue;
+						}						
 					case MAERSK_TYPE:
-						if (!filename.contains("MAERSK")) doc.close();
-						continue;
+						out("MAERSK");
+						if (!fileName.contains("MAERSK")) {
+							doc.close();
+							continue;
+						}
 					case TURKON_TYPE:
-						if (!filename.contains("TR")) doc.close();
-						continue;
+						out("TURKON");
+						if (!fileName.contains("TR")) {
+							doc.close();
+							continue;
+						}
 				}
+
+				BufferedWriter bw = new BufferedWriter(new FileWriter("text.txt"));
+				out("this file is "+ TYPE[type]);
+				out("we passed switch block");
 				// EXTRACT TO TEXTFILE
 				bw.write(text);
 				bw.close();
@@ -671,21 +675,21 @@ public class App {
 						// MATCH THE BILL OF LADING TO THIS ORDER FILE
 						out("we found a match: ");
 						out("BILL OF LADING >> " + shipOrBill + ".pdf");
-						out("ORDER FILE >> " + ordersList.get(i));
+						out("ORDER FILE >> " + fileName);
 						// MERGE
 						File file = new File(filePath);
-						File orderFile = new File(ordersList.get(i));
+						File orderFile = new File(fileName);
 						
 						// BEGIN COMMENT -----
 						PDFMergerUtility mergerPdf = new PDFMergerUtility();
-						mergerPdf.setDestinationFileName(ordersList.get(i));
+						mergerPdf.setDestinationFileName(fileName);
 						mergerPdf.addSource(orderFile);
 						mergerPdf.addSource(file);
 						mergerPdf.mergeDocuments();
 
 						out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading--2");
 						// RENAME
-						orderFile.renameTo(new File(ordersList.get(i).substring(0,ordersList.get(i).length()-4)+" BL.pdf"));
+						orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
 						// END COMMENT -----
 						
 						// DELETE FROM LIST
@@ -694,6 +698,8 @@ public class App {
 						doc.close();
 						return true;
 					}
+					out(tempString);
+					out("does not contain " + shipOrBill);
 					tempString = br.readLine();
 				}
 				br.close();
