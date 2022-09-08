@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +21,9 @@ import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class App {
 
@@ -45,7 +49,9 @@ public class App {
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
+	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xls";
 
+	private static HashMap<String, String> billToShipPair;
 	public static Pattern PATTERN_CMA;
 	public static Pattern PATTERN_COSCO;
 	public static Pattern PATTERN_EVERGREEN;
@@ -78,6 +84,9 @@ public class App {
 	}
 	
 	public App() throws Exception {
+		XSSFWorkbook workbook = new XSSFWorkbook(EXCEL_FILE);
+		populateShipIds(workbook);
+		
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();
 		ordersList = retrieveOrderFiles();
@@ -708,6 +717,15 @@ public class App {
 			e.printStackTrace();
 		}
 		return false;
+	}
+	
+	private static void populateShipIds(XSSFWorkbook workbook) throws Exception {
+		Sheet sheet = workbook.getSheetAt(0);
+		
+		for(int index = 1; index < sheet.getPhysicalNumberOfRows(); index++) {
+			Row row = sheet.getRow(index);
+			billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
+		}
 	}
 	
 	private static List <String> retrieveAllFiles() throws Exception {
