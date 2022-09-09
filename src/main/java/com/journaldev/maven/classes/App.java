@@ -40,6 +40,7 @@ public class App {
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private List<String> filesList;
 	private static List<String> ordersList;
+	private static boolean processed;
 	
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
@@ -106,12 +107,17 @@ public class App {
 
 		// PROCESS ALL FILES: SPLIT AND RENAME WITH ACCORDING B/L #S
 		for(int a=0 ; a<filesList.size(); a++) {
+			processed = false;
 			currentFile = new File(filesList.get(a));
 			out("read in file ["+a+"] : "+filesList.get(a));
 
+			shipMatcher = PATTERN_SHIP_ID.matcher(filesList.get(a));
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
 			fileTypes[a] = determineFileType(currentFile);
 			out("Based on our program, this file is type '"+TYPE[fileTypes[a]]+"'\n");
+
+			if(shipMatcher.find()) searchAndMerge(filesList.get(a),shipMatcher.group(1),fileTypes[a]);
+			
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
 			
@@ -142,9 +148,13 @@ public class App {
 					break;
 			}
 			doc.close();
-			currentFile.delete();
-			filesList.remove(a);
-			a--;
+			if(processed) {
+				out("This file was processed : " + filesList.get(a));
+				currentFile.delete();
+				filesList.remove(a);
+				a--;
+			}
+			else out("This file was not processed : " + filesList.get(a));
 		}
 	}
 	
@@ -628,11 +638,12 @@ public class App {
 				// DELETE FROM LIST
 				ordersList.remove(i);
 				out("deleted from the list and returning true");
+				processed = true;
 				return true;
 			}
 			return false;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			out("An Exception occured in searchAndMerge " + e.getMessage());
 			e.printStackTrace();
 		}
 		return false;
