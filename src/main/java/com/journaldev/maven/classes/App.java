@@ -50,7 +50,7 @@ public class App {
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
 	private final static String TEXTFILE_PATH = "C:\\SC\\text.txt";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
-//	private final static String EXCEL_FILE = "I:\\ARRIVAL NOTICES\\ShipmentIDs.xls";
+//	private final static String EXCEL_FILE = "I:\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
 	public static Pattern PATTERN_CMA;
@@ -146,12 +146,6 @@ public class App {
 			filesList.remove(a);
 			a--;
 		}
-		
-		/**
-		 * Next Steps 	- Read order files
-		 * 				- Look inside and find the matching B/L
-		 * 				- Merge and delete older file
-		 */
 	}
 	
 	public static void processCMA(int pageCount) {
@@ -193,11 +187,14 @@ public class App {
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) {
 								doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
-								searchAndMerge(LOCAL_FILE_PATH + shipId + ".pdf", shipId, CMA_TYPE, true);
+								searchAndMerge(LOCAL_FILE_PATH + shipId + ".pdf", shipId, CMA_TYPE);
 							} else {
-								String newFileName = getFileName(br, newBL);
+								String newFileName = getFileName(newBL);
 								doc.save(LOCAL_FILE_PATH + newFileName + ".pdf");
-								searchAndMerge(LOCAL_FILE_PATH + newFileName + ".pdf", newFileName, CMA_TYPE, false);
+								if(newFileName.matches(SHIP_ID_REGEX)) {
+									out("Yes, the string " + newFileName + " matches the RegEx for Ship ID");
+									searchAndMerge(LOCAL_FILE_PATH + newFileName + ".pdf", newFileName, CMA_TYPE);
+								}
 							}
 							shipId = "";
 						}
@@ -205,18 +202,18 @@ public class App {
 						else if(!currentBL.equals(newBL)) {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), CMA_TYPE);
 								shipId = "";
 							}
 							else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), CMA_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL), CMA_TYPE);
 								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						} else if(page == pageCount) {
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-							else splitDocAndRename(doc, currentStartPage, page, getFileName(br, currentBL), CMA_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), CMA_TYPE);
 							shipId = "";
 						}
 						break;
@@ -225,7 +222,7 @@ public class App {
 				}
 				if(!foundBL && page == pageCount) { 
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page, currentBL, CMA_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), CMA_TYPE);
 					shipId = "";
 				}
 				br.close();
@@ -271,11 +268,11 @@ public class App {
 			if (matcher.find()) currentBL = matcher.group(1);
 			if(!shipId.isBlank()) {
 				doc.save(LOCAL_FILE_PATH+shipId+".pdf");
-				searchAndMerge(LOCAL_FILE_PATH+shipId+".pdf", shipId, COSCO_TYPE, true);
-			}
-			else if(!currentBL.isBlank()) {
-				doc.save(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf");
-				searchAndMerge(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf", currentBL, COSCO_TYPE, false);
+				searchAndMerge(LOCAL_FILE_PATH+shipId+".pdf", shipId, COSCO_TYPE);
+			} else if(!currentBL.isBlank()) {
+				shipId = getFileName(currentBL);
+				doc.save(LOCAL_FILE_PATH+"COSU"+shipId+".pdf");
+				searchAndMerge(LOCAL_FILE_PATH+"COSU"+currentBL+".pdf", shipId, COSCO_TYPE);
 			}
 			shipId = "";
 			doc.close();
@@ -327,11 +324,11 @@ public class App {
 						if(pageCount == 1) {
 							if(!shipId.isEmpty()) {
 								doc.save(LOCAL_FILE_PATH + shipId + ".pdf");
-								searchAndMerge(LOCAL_FILE_PATH + shipId + ".pdf", shipId, EVERGREEN_TYPE, true);
+								searchAndMerge(LOCAL_FILE_PATH + shipId + ".pdf", shipId, EVERGREEN_TYPE);
 							} else {
-								String newFileName = getFileName(br, "EGLV" + newBL);
+								String newFileName = getFileName("EGLV" + newBL);
 								doc.save(LOCAL_FILE_PATH + newFileName + ".pdf");
-								searchAndMerge(LOCAL_FILE_PATH + newFileName + ".pdf", newFileName, EVERGREEN_TYPE, false);
+								searchAndMerge(LOCAL_FILE_PATH + newFileName + ".pdf", newFileName, EVERGREEN_TYPE);
 							}
 							shipId = "";
 						}
@@ -341,11 +338,11 @@ public class App {
 							currentStartPage = page;
 							page--;
 							currentBL = newBL;
-							shipId = getFileName(br, currentBL);
+							shipId = getFileName(currentBL);
 							break;
 						} else { // NEW BL FOUND AND THE OLD ONE SHOULD BE SPLIT
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
-							else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, "EGLV"+currentBL), EVERGREEN_TYPE);
+							else splitDocAndRename(doc, currentStartPage, page-1, getFileName("EGLV"+currentBL), EVERGREEN_TYPE);
 							shipId = "";
 							currentStartPage = page;
 						}
@@ -358,14 +355,14 @@ public class App {
 				}
 				if(!foundBL && !currentBL.isEmpty()) { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page-1, "EGLV"+currentBL, EVERGREEN_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page-1, getFileName("EGLV"+currentBL), EVERGREEN_TYPE);
 					shipId = "";
 					currentStartPage = page;
 					currentBL = "";
 				}
 				if(foundBL && page == pageCount) {
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage,page, shipId, EVERGREEN_TYPE);
-					else splitDocAndRename(doc, currentStartPage,page, "EGLV"+currentBL, EVERGREEN_TYPE);
+					else splitDocAndRename(doc, currentStartPage,page, getFileName("EGLV"+currentBL), EVERGREEN_TYPE);
 					shipId = "";
 				}
 				br.close();
@@ -435,12 +432,10 @@ public class App {
 				String currentLine = br.readLine();
 				while(currentLine != null) {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
-					if(shipMatcher.find()) {
-						shipId = shipMatcher.group(1);
-					}
+					if(shipMatcher.find()) shipId = shipMatcher.group(1);
 					if(currentLine.contains(currentBL)) {
 						if(!shipId.isEmpty()) splitDocAndRename(doc, page, page, shipId, MSC_TYPE);
-						else splitDocAndRename(doc, page, page, getFileName(br, currentBL), MSC_TYPE);
+						else splitDocAndRename(doc, page, page, getFileName(currentBL), MSC_TYPE);
 						shipId = "";
 						break;
 					}
@@ -484,26 +479,23 @@ public class App {
 					matcher = PATTERN_TURKON.matcher(currentLine);
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 
-					if(shipMatcher.find()) {
-						shipId = shipMatcher.group(1);
-					}
+					if(shipMatcher.find()) shipId = shipMatcher.group(1);
 					if(matcher.find()) {
 						foundBL = true;
 						if(currentBL != "") {
 							if(currentStartPage < page-1) {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(br, currentBL), TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), TURKON_TYPE);
 								shipId = "";
-							}
-							else {
+							} else {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(br, currentBL), TURKON_TYPE);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL), TURKON_TYPE);
 								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
 						currentBL = matcher.group(1);
-						shipId = getFileName(br, currentBL);
+						shipId = getFileName(currentBL);
 						blCounter++;
 						break;
 					}
@@ -511,7 +503,7 @@ public class App {
 				}
 				if(!foundBL && page == pageCount) {
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, TURKON_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page, currentBL, TURKON_TYPE);
+					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), TURKON_TYPE);
 					shipId = "";
 				}
 				br.close();
@@ -523,19 +515,10 @@ public class App {
 		}
 	}
 	
-	public static String getFileName(BufferedReader br, String BL) throws Exception {
-		String currentLine = br.readLine();
-		String ship;
-		while(currentLine != null) {
-			shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
-			if(shipMatcher.find()) {
-				ship = shipMatcher.group(1);
-				out("from line ["+currentLine+"]");
-				return ship;
-			}
-			currentLine = br.readLine();
-		}
-		return BL;
+	public static String getFileName(String BL) throws Exception {
+		String ship = billToShipPair.get(BL);
+		if(ship == null) return BL;
+		return ship;
 	}
 
 	
@@ -547,40 +530,31 @@ public class App {
 		PDFMergerUtility mergerPdf = new PDFMergerUtility();
 		String name = "";
 		
-
-		shipMatcher = PATTERN_SHIP_ID.matcher(newName);
-		String shipID = newName;
-		boolean shipMatched = shipMatcher.find();
-		if(!shipMatched) {
-			// SEARCH shipmentID by bill of lading
-			shipID = billToShipPair.get(newName) == null ? newName : billToShipPair.get(newName);
-			shipMatched = shipID != newName;
+		if(newName.matches(SHIP_ID_REGEX)) out(newName + " ship matched");
+		else out(newName+" still not ship matched");
+		
+		// MERGE ALL FILES OF THE SAME B/L#
+		for (int page = 0; page < newDoc.size(); page++) {
+			name = LOCAL_FILE_PATH + newName + "_" + page + ".pdf";
+			newDoc.get(page).save(name);
+			mergerPdf.addSource(name);
 		}
-		if(shipMatched) {
-			// MERGE ALL FILES OF THE SAME B/L#
-			for (int page = 0; page < newDoc.size(); page++) {
-				name = LOCAL_FILE_PATH + shipID + "_" + page + ".pdf";
-				newDoc.get(page).save(name);
-				mergerPdf.addSource(name);
-			}
-			mergerPdf.setDestinationFileName(LOCAL_FILE_PATH + shipID + ".pdf");
-			mergerPdf.mergeDocuments();
-			
-			// DELETE SPLIT PAGES AFTER MERGING
-			out("deleted files: ");
-			for (int page = 0; page < newDoc.size(); page++) {
-				name = LOCAL_FILE_PATH + shipID + "_" + page + ".pdf";
-				File file = new File(name);
-				file.delete();
-				out("["+page+"] "+ name);
-			}
-			out(" as they've already been merged with name "+shipID);
-	
-			// UPDATE TO ACTUALLY MERGE AND DELETE
-			if (searchAndMerge(LOCAL_FILE_PATH + newName + ".pdf", shipID, carrierType, shipMatched)) {
-				File file = new File(LOCAL_FILE_PATH + newName + ".pdf");
-				file.delete();
-			}
+		mergerPdf.setDestinationFileName(LOCAL_FILE_PATH + newName + ".pdf");
+		mergerPdf.mergeDocuments();
+		
+		// DELETE SPLIT PAGES AFTER MERGING
+		out("deleted files: ");
+		for (int page = 0; page < newDoc.size(); page++) {
+			name = LOCAL_FILE_PATH + newName + "_" + page + ".pdf";
+			File file = new File(name);
+			file.delete();
+			out("["+page+"] "+ name);
+		}
+		out(" as they've already been merged with name " + newName);
+
+		if (searchAndMerge(LOCAL_FILE_PATH + newName + ".pdf", newName, carrierType)) {
+			File file = new File(LOCAL_FILE_PATH + newName + ".pdf");
+			file.delete();
 		}
 	}
 	
@@ -616,117 +590,47 @@ public class App {
 		return CMA_TYPE;
 	}
 	
-	public static boolean searchAndMerge(String filePath, String shipOrBill, int type, boolean isShipmentID) {
+	/**
+	 * This method
+	 * @param filePath
+	 * @param shipID
+	 * @param type
+	 * @return
+	 */
+	public static boolean searchAndMerge(String filePath, String shipID, int type) {
 		try {
 			String fileName;
 			for(int i = 0; i < ordersList.size(); i++) {
 				fileName = ordersList.get(i);
-				if(isShipmentID) {
-					if(!fileName.contains(shipOrBill)) {
-						continue;
-					}
-					out("we found a match: ");
-					out("SHIPMENT ID >> " + shipOrBill + ".pdf");
-					out("ORDER FILE >> " + fileName);
-					
-					// MERGE
-					File file = new File(filePath);
-					File orderFile = new File(fileName);
-					
-					// BEGIN COMMENT -----
-					PDFMergerUtility mergerPdf = new PDFMergerUtility();
-					mergerPdf.setDestinationFileName(fileName);
-					mergerPdf.addSource(orderFile);
-					mergerPdf.addSource(file);
-					mergerPdf.mergeDocuments();
-					
-					out("we are renaming the above order file to have 'AN' at the end as proof that we have attached the bill of lading");
-					// RENAME
-					orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
-					// END COMMENT -----
-					
-					// DELETE FROM LIST
-					ordersList.remove(i);
-					out("deleted from the list and returning true");
-					return true;
+				if(!fileName.contains(shipID)) {
+					continue;
 				}
-				if(isShipmentID) out("THIS LINE SHOULD NOT HAVE BEEN REACHED");
-				if(i == ordersList.size()-1) return false;
+				out("we found a match: ");
+				out("SHIPMENT ID >> " + shipID + ".pdf");
+				out("ORDER FILE >> " + fileName);
 				
-					/**************** TO UPDATE *******************/
-//					out("it is not a shipment ID");
-//					PDDocument doc = PDDocument.load(new File(fileName));
-//					PDFTextStripper pdfStripper = new PDFTextStripper();
-//					out("===READING " + fileName);
-//					String text = pdfStripper.getText(doc);
-//	
-//					switch (type) {
-//						case EVERGREEN_TYPE:
-//							out("EVERGREEN");
-//							if (fileName.contains("ID") || fileName.contains("TR")) {
-//								doc.close();
-//								continue;
-//							}						
-//						case MAERSK_TYPE:
-//							out("MAERSK");
-//							if (!fileName.contains("MAERSK")) {
-//								doc.close();
-//								continue;
-//							}
-//						case TURKON_TYPE:
-//							out("TURKON");
-//							if (!fileName.contains("TR")) {
-//								doc.close();
-//								continue;
-//							}
-//					}
-//	
-//					BufferedWriter bw = new BufferedWriter(new FileWriter("text.txt"));
-//					out("this file is "+ TYPE[type]);
-//					out("we passed switch block");
-//					// EXTRACT TO TEXTFILE
-//					bw.write(text);
-//					bw.close();
-//					File textfile = new File("text.txt");
-//					BufferedReader br = new BufferedReader(new FileReader(textfile));
-//					String tempString = br.readLine();
-//					
-//					// FIND MATCH
-//					while (tempString != null) {
-//						if(tempString.contains(shipOrBill)) {
-//							// MATCH THE BILL OF LADING TO THIS ORDER FILE
-//							out("we found a match: ");
-//							out("BILL OF LADING >> " + shipOrBill + ".pdf");
-//							out("ORDER FILE >> " + fileName);
-//							// MERGE
-//							File file = new File(filePath);
-//							File orderFile = new File(fileName);
-//							
-//							// BEGIN COMMENT -----
-//	//						PDFMergerUtility mergerPdf = new PDFMergerUtility();
-//	//						mergerPdf.setDestinationFileName(fileName);
-//	//						mergerPdf.addSource(orderFile);
-//	//						mergerPdf.addSource(file);
-//	//						mergerPdf.mergeDocuments();
-//	//
-//	//						out("we are renaming the above order file to have 'BL' at the end as proof that we have attached the bill of lading--2");
-//	//						// RENAME
-//	//						orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" BL.pdf"));
-//							// END COMMENT -----
-//							
-//							// DELETE FROM LIST
-//							ordersList.remove(i);
-//							br.close();
-//							doc.close();
-//							return true;
-//						}
-//						tempString = br.readLine();
-//					}
-//					br.close();
-//					doc.close();
-					/**************** TO UPDATE *******************/
-
+				// MERGE
+				File file = new File(filePath);
+				File orderFile = new File(fileName);
+				
+				// BEGIN COMMENT -----
+				PDFMergerUtility mergerPdf = new PDFMergerUtility();
+				mergerPdf.setDestinationFileName(fileName);
+				mergerPdf.addSource(orderFile);
+				mergerPdf.addSource(file);
+				mergerPdf.mergeDocuments();
+				
+				out("we are renaming the above order file to have 'AN' at the end as proof that we have attached the bill of lading");
+				// RENAME
+				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
+				// END COMMENT -----
+				
+				// DELETE FROM LIST
+				ordersList.remove(i);
+				out("deleted from the list and returning true");
+				return true;
 			}
+			return false;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -739,27 +643,23 @@ public class App {
 		
 		for(int index = 0; index < sheet.getPhysicalNumberOfRows(); index++) {
 			Row row = sheet.getRow(index);
-			if(row.getCell(0) == null || row.getCell(1) == null) {
-				out("row is null...");
-				continue;
-			}
+			if(row.getCell(0) == null || row.getCell(1) == null) continue;
 			else {
 				out("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
 				billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
 			}
-			out(index+": there are " + sheet.getPhysicalNumberOfRows() + " rows in the sheet");
 		}
 	}
 	
 	private static List <String> retrieveAllFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ULTIMATE_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.matches(SHIP_ID_REGEX)).collect(Collectors.toList());
 		}
 	}
 	
 	private static List <String> retrieveOrderFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toUpperCase().contains("AN.PDF")).collect(Collectors.toList());
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toUpperCase().endsWith("AN.PDF")).collect(Collectors.toList());
 		}
 	}
 	
