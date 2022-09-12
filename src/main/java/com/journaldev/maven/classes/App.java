@@ -115,26 +115,23 @@ public class App {
 
 			int index = filename.lastIndexOf("\\")+1;
 			
-			out("filename with substring 0 to 3 " + filename.substring(index, index + 3));
-
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
 			fileTypes[a] = determineFileType(currentFile);
 			
 			if (filename.substring(index, index + 3).equals("BOL")) {
-				out("filename starts with BOL ==> " +filename);
-				out("find corresponding ship ID");
+				out("BOL file, finding shipID");
+				String shipID = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
+				if(shipID.matches(SHIP_ID_REGEX)) searchAndMerge(filename, shipID,fileTypes[a]);
 				continue;
 			} else if(filename.substring(index, index + 3).equals("SID")) {
-				out("filename starts with SID ==> " +filename);
+				out("SID file, searching and merging");
 				searchAndMerge(filename, filename.substring(index+4,filename.lastIndexOf(".")),fileTypes[a]);
 				continue;
 			}
 			
+			out("not BOL nor SID");
 			shipMatcher = PATTERN_SHIP_ID.matcher(filename);
-			out("Based on our program, this file is type '"+TYPE[fileTypes[a]]+"'\n");
-
 			if(shipMatcher.find()) searchAndMerge(filename,shipMatcher.group(1),fileTypes[a]);
-			
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
 			
@@ -190,7 +187,7 @@ public class App {
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
-
+				
 				// EXTRACT PAGE TO TEXT FILE
 				BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 				bw.write(text);
@@ -219,16 +216,19 @@ public class App {
 								out("there is a ship ID found: " + shipId);
 								doc.save(LOCAL_FILE_PATH + "SID " + shipId + ".pdf");
 								searchAndMerge(LOCAL_FILE_PATH + "SID " + shipId + ".pdf", shipId, CMA_TYPE);
+								doc.close();
 							} else {
 								out("there is no ship ID found");
 								String newFileName = getFileName(newBL);
 								if(newFileName.matches(SHIP_ID_REGEX)) {
 									out("Yes, the string " + newFileName + " matches the RegEx for Ship ID");
 									doc.save(LOCAL_FILE_PATH + "SID " + newFileName + ".pdf");
+									doc.close();
 									searchAndMerge(LOCAL_FILE_PATH + "SID " + newFileName + ".pdf", newFileName, CMA_TYPE);
 								} else {
 									out("The string " + newFileName + " does not match the RegEx for Ship ID");
 									doc.save(LOCAL_FILE_PATH + "BOL " + newFileName + ".pdf");
+									doc.close();
 								}
 							}
 							shipId = "";
@@ -241,15 +241,14 @@ public class App {
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
 								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), CMA_TYPE);
 								shipId = "";
-							}
-							else {
+							} else {
 								out("we are splitting the document within else");
 								if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
 								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL), CMA_TYPE);
 								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
-						} else if(page == pageCount) {
+						} else if (page == pageCount) {
 							out("we are at the end of file, splitting and renaming the document");
 							if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
 							else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), CMA_TYPE);
@@ -259,7 +258,6 @@ public class App {
 					}
 					currentLine = br.readLine();
 				}
-				out("hit end of line");
 				if(!foundBL && page == pageCount) {
 					out("splitting and renaming the document now...");
 					if(!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
@@ -580,9 +578,9 @@ public class App {
 		splitter.setEndPage(end);
 		List<PDDocument> newDoc = splitter.split(doc);
 		PDFMergerUtility mergerPdf = new PDFMergerUtility();
+		String ID = newName;
 		String name = "";
 		processed = true;
-		out(LOCAL_FILE_PATH + newName + ".pdf" + " is " + processed + " equals to " + currentFile.getAbsolutePath());
 		if(newName.matches(SHIP_ID_REGEX)) newName = "SID " + newName;
 		else newName = "BOL "+newName;
 		
@@ -604,10 +602,11 @@ public class App {
 			out("["+page+"] "+ name);
 		}
 		out(" as they've already been merged with name " + newName);
-		if (searchAndMerge(LOCAL_FILE_PATH + newName + ".pdf", newName, carrierType)) {
+		if (searchAndMerge(LOCAL_FILE_PATH + newName + ".pdf", ID, carrierType)) {
 			File file = new File(LOCAL_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
+		
 	}
 	
 	public static int determineFileType(File file) {
@@ -652,6 +651,7 @@ public class App {
 	public static boolean searchAndMerge(String filePath, String shipID, int type) {
 		try {
 			String fileName;
+			out("we're inside search and merge function, shipId is " + shipID);
 			for(int i = 0; i < ordersList.size(); i++) {
 				fileName = ordersList.get(i);
 				if(!fileName.contains(shipID)) {
@@ -712,7 +712,8 @@ public class App {
 	
 	private static List <String> retrieveOrderFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toUpperCase().endsWith("AN.PDF")).collect(Collectors.toList());
+//			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.toUpperCase().endsWith("AN.PDF")).collect(Collectors.toList());
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
 		}
 	}
 	
