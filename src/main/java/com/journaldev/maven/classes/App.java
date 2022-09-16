@@ -356,20 +356,8 @@ public class App {
 						foundBL = true;
 						newBL = matcher.group(1);
 						if (pageCount == 1) {
-							out("we only have one page, saving this page now");
-							if (!shipId.isEmpty()) {
-								out("saving the document with shipment id " + shipId);
-								doc.save(ARRIVAL_NOTICES_FILE_PATH + shipId + ".pdf");
-								out("going through search and merge with shipId");
-								searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + shipId + ".pdf", shipId, EVERGREEN_TYPE);
-							} else {
-								String newFileName = getFileName(newBL);
-								out("saving the document with bill of lading " + newFileName);
-								doc.save(ARRIVAL_NOTICES_FILE_PATH + newFileName + ".pdf");
-								out("going through search and merge");
-								searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + newFileName + ".pdf", newFileName, EVERGREEN_TYPE);
-							}
-							shipId = "";
+							shipId = getFileName(newBL);
+							break;
 						} else if (page == 1) {
 							out("we are on page one, moving on");
 							break;
@@ -467,7 +455,8 @@ public class App {
 			if (matcher.find()) currentBL = matcher.group(1);
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
-				
+
+			File textfile = new File(TEXTFILE_PATH);
 			for(int page = 1; page <= pageCount; page ++) {
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
@@ -478,7 +467,6 @@ public class App {
 				bw.write(text);
 				bw.close();
 				
-				File textfile = new File(TEXTFILE_PATH);
 				BufferedReader br = new BufferedReader(new FileReader(textfile));
 				String currentLine = br.readLine();
 				while (currentLine != null) {
@@ -493,9 +481,9 @@ public class App {
 					currentLine = br.readLine();
 				}
 				br.close();
-				textfile.delete();
 			}
 			doc.close();
+			textfile.delete();
 		} catch (Exception e) {
 			out ("We got an exception from processMSC " + e);
 			e.printStackTrace();
@@ -727,12 +715,15 @@ public class App {
 							if(anMatches < matchCount) {
 								out("There are less Arrival Notices attached on this file than the shipment orders. There are " + anMatches + " ANs attached to this file when there are " + matchCount + " shipment orders here.");
 								return true;
+							} else {
+								out("There are already matching or even more ANs attached to this file than the amount of shipment IDs there are for this order ==> " + anMatches + " >= " + matchCount);
+								return false;
 							}
-							out("There are already matching or even more ANs attached to this file than the amount of shipment IDs there are for this order ==> " + anMatches + " >= " + matchCount);
 						}
 						out("there is only " + matchCount + " ship ID on this filename: " + f2);
+						return false;
 					}
-					return false;}).collect(Collectors.toList());
+					return true;}).collect(Collectors.toList());
 				
 //			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
 		}
