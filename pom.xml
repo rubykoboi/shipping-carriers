@@ -2,9 +2,11 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-<!-- ver 0.0.1-SNAPSHOT:
-	1. first version
+  <version>0.0.2-SNAPSHOT</version>
+<!-- ver 0.0.2-SNAPSHOT:
+	1. renames Arrival Notices with shipment ID or bill of lading
+	2. deletes original files when processed (split into smaller files)
+	3. deletes files that have already been merged with the shipment order files
 -->
 
   <dependencies>
