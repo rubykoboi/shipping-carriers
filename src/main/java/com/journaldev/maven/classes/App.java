@@ -34,14 +34,14 @@ public class App {
 	private final static int MSC_TYPE = 4;
 	private final static int TURKON_TYPE = 5;
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
-	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
+//	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
-	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
-	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICESL\\junk.txt";
-//	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
+//	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
+	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 //	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
-//	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
-//	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
+	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+//	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICESL\\junk.txt";
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -49,14 +49,14 @@ public class App {
 	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
-	private final static String MAERSK_BL_REGEX = "";
+	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
 	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
-	public static Pattern PATTERN_CMA;
+	public static Pattern PATTERN_CMA;  
 	public static Pattern PATTERN_COSCO;
 	public static Pattern PATTERN_EVERGREEN;
 	public static Pattern PATTERN_MAERSK;
@@ -420,25 +420,37 @@ public class App {
 		try {
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
-				
-			String text = pdfStripper.getText(doc);
+			String text = pdfStripper.getText(doc), shipId, currentBL = "";
 			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 			
 			// EXTRACT PAGE TO TEXT FILE
-			doc.close();
 			bw.write(text);
 			bw.close();
-			
+			processed = false;
 			File textfile = new File(TEXTFILE_PATH);
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 			while(currentLine != null) {
+				shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+				if (shipMatcher.find()) {
+					processed = true;
+					shipId = shipMatcher.group(1);
+					splitDocAndRename(doc, 1, pageCount, shipId, MAERSK_TYPE);
+					break;
+				}
+				currentLine = br.readLine();
 				matcher = PATTERN_MAERSK.matcher(currentLine);
-				if (matcher.find())	out ("found MAERSK match: " + matcher.group(1));
+				if (matcher.find())	{
+					currentBL = "MARU"+matcher.group(1);
+					out ("found MAERSK match group1: " + currentBL);
+				}
 				currentLine = br.readLine();
 			}
+			if(!processed) splitDocAndRename(doc, 1, pageCount, getFileName(currentBL), MAERSK_TYPE);
+
+			doc.close();
 			br.close();
-			textfile.delete();
+//			textfile.delete();
 		} catch (Exception e) {
 			out ("We got an exception from processMAERSK " + e);
 			e.printStackTrace();
@@ -614,6 +626,7 @@ public class App {
 			while(currentLine != null) {
 				if (currentLine.toUpperCase().contains("COSCO"))	return COSCO_TYPE;
 				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
+				if (currentLine.toUpperCase().contains("MAERSK"))	return MAERSK_TYPE;
 				if (currentLine.toUpperCase().contains("INVOICING AND DISPUTES"))	return MSC_TYPE;
 				if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
 				currentLine = br.readLine();
@@ -651,14 +664,14 @@ public class App {
 				File orderFile = new File(fileName);
 				
 				// BEGIN COMMENT -----
-				PDFMergerUtility mergerPdf = new PDFMergerUtility();
-				mergerPdf.setDestinationFileName(fileName);
-				mergerPdf.addSource(orderFile);
-				mergerPdf.addSource(file);
-				mergerPdf.mergeDocuments();
-				
-				// RENAME
-				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
+//				PDFMergerUtility mergerPdf = new PDFMergerUtility();
+//				mergerPdf.setDestinationFileName(fileName);
+//				mergerPdf.addSource(orderFile);
+//				mergerPdf.addSource(file);
+//				mergerPdf.mergeDocuments();
+//				
+//				// RENAME
+//				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
 				// END COMMENT -----
 				file.delete();
 				
