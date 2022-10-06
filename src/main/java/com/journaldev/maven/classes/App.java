@@ -34,19 +34,21 @@ public class App {
 	private final static int MSC_TYPE = 4;
 	private final static int TURKON_TYPE = 5;
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
+	// BEGIN COMMENT
+//	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 //	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
-	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 //	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
+//	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
+	//END COMMENT
+	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
-//	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
-//	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICESL\\junk.txt";
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
 	
-	private final static String CMA_BL_REGEX = "\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*";
+	private final static String CMA_BL_REGEX = "(\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*)|^([A-Z]{4}\\d{6})[^\\S]";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
@@ -198,7 +200,10 @@ public class App {
 					if (matcher.find()) {
 						processed = true;
 						foundBL = true;
+						out("currentline is " +currentLine);
 						newBL = matcher.group(1);
+						if(newBL == null) newBL = matcher.group(3);
+						out("WE HAVE SOMETHINGGGG ====>" + newBL);
 						if (pageCount == 1) {
 							if (!shipId.isEmpty()) {
 								doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
@@ -208,12 +213,11 @@ public class App {
 								String newFileName = getFileName(newBL);
 								if (newFileName.matches(SHIP_ID_REGEX)) {
 									doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf");
-									doc.close();
 									searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf", newFileName, CMA_TYPE);
 								} else {
 									doc.save(ARRIVAL_NOTICES_FILE_PATH + "BOL " + newFileName + ".pdf");
-									doc.close();
 								}
+								doc.close();
 							}
 							shipId = "";
 						} else if (page == 1) currentBL = newBL;
@@ -569,6 +573,7 @@ public class App {
 	}
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
+		if(newName.isBlank()) return;
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
 		splitter.setEndPage(end);
@@ -605,6 +610,7 @@ public class App {
 			File file = new File(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
+		doc.close();
 	}
 	
 	public static int determineFileType(File file) {
@@ -664,16 +670,16 @@ public class App {
 				File orderFile = new File(fileName);
 				
 				// BEGIN COMMENT -----
-//				PDFMergerUtility mergerPdf = new PDFMergerUtility();
-//				mergerPdf.setDestinationFileName(fileName);
-//				mergerPdf.addSource(orderFile);
-//				mergerPdf.addSource(file);
-//				mergerPdf.mergeDocuments();
-//				
-//				// RENAME
-//				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
-				// END COMMENT -----
+				PDFMergerUtility mergerPdf = new PDFMergerUtility();
+				mergerPdf.setDestinationFileName(fileName);
+				mergerPdf.addSource(orderFile);
+				mergerPdf.addSource(file);
+				mergerPdf.mergeDocuments();
+				
+				// RENAME
+				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
 				file.delete();
+				// END COMMENT -----
 				
 				// DELETE FROM LIST
 				ordersList.remove(i);
@@ -701,7 +707,7 @@ public class App {
 					billToShipPair.put(row.getCell(0).getStringCellValue().substring(4), row.getCell(1).toString());
 				} else {
 					billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
-					out ("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
+//					out ("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
 				}
 			}
 		}

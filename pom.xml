@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
-<!-- ver 0.0.3-SNAPSHOT:
-	1. fixed bugs
+  <version>0.0.4-SNAPSHOT</version>
+<!-- ver 0.0.4-SNAPSHOT:
+	1. included another RegEx pattern for CMA BOL
 -->
 
   <dependencies>
@@ -18,7 +18,7 @@
 	   <artifactId>poi</artifactId>
  	   <version>5.2.2</version>
 	</dependency>
-  	<dependency>
+	<dependency>
  	   <groupId>org.apache.poi</groupId>
 	   <artifactId>poi-ooxml</artifactId>
  	   <version>5.2.2</version>

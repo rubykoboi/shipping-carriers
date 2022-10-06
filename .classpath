@@ -45,5 +45,7 @@
 			<attribute name="maven.scope" value="compile"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/safavieh/Downloads/poi-bin-5.2.2-20220312.zip"/>
+	<classpathentry kind="lib" path="C:/Program Files/apache-maven-3.8.6/bin/poi-bin-5.2.2/poi-5.2.2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
