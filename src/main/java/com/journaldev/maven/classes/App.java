@@ -35,15 +35,15 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
 	// BEGIN COMMENT
-//	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
-//	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
-//	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
-//	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
+	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
+	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
+	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
+	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
 	//END COMMENT
-	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
-	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
-	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
-	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+//	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
+//	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
+//	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
+//	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -200,10 +200,9 @@ public class App {
 					if (matcher.find()) {
 						processed = true;
 						foundBL = true;
-						out("currentline is " +currentLine);
 						newBL = matcher.group(1);
 						if(newBL == null) newBL = matcher.group(3);
-						out("WE HAVE SOMETHINGGGG ====>" + newBL);
+						out("CMA BOL Found ====>" + newBL);
 						if (pageCount == 1) {
 							if (!shipId.isEmpty()) {
 								doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
@@ -443,6 +442,7 @@ public class App {
 					break;
 				}
 				currentLine = br.readLine();
+				if(currentLine == null) break;
 				matcher = PATTERN_MAERSK.matcher(currentLine);
 				if (matcher.find())	{
 					currentBL = "MARU"+matcher.group(1);
@@ -610,7 +610,7 @@ public class App {
 			File file = new File(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
-		doc.close();
+//		doc.close();
 	}
 	
 	public static int determineFileType(File file) {
@@ -751,5 +751,11 @@ public class App {
 	public static void out (String stringToPrint) {
 		System.out.println(stringToPrint);
 		printLog += stringToPrint + "\n";
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(ARRIVAL_NOTICES_FILE_PATH+"Log.txt"));
+			bw.write(printLog);
+			bw.close();
+		}
+		 catch (Exception e) { e.printStackTrace(); }
 	}
 }
