@@ -52,7 +52,7 @@ public class App {
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
-	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{2}\\d{6})";
+	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{1,2}\\d{6})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
@@ -91,6 +91,7 @@ public class App {
 	
 	public App() throws Exception {
 		XSSFWorkbook workbook = new XSSFWorkbook(EXCEL_FILE);
+		out("ABOUT TO POPULATE SHIPIDs");
 		populateShipIds(workbook);
 
 		// INITIALIZE ALL BL# PATTERNS
@@ -445,7 +446,7 @@ public class App {
 				if(currentLine == null) break;
 				matcher = PATTERN_MAERSK.matcher(currentLine);
 				if (matcher.find())	{
-					currentBL = "MARU"+matcher.group(1);
+					currentBL = matcher.group(1);
 					out ("found MAERSK match group1: " + currentBL);
 				}
 				currentLine = br.readLine();
@@ -568,8 +569,8 @@ public class App {
 	
 	public static String getFileName(String BL) throws Exception {
 		String ship = billToShipPair.get(BL);
-		if (ship == null) return BL;
-		return ship;
+		if (ship == null) return BL.trim();
+		return ship.trim();
 	}
 	
 	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
@@ -698,6 +699,7 @@ public class App {
 		Sheet sheet = workbook.getSheetAt(0);
 		out("There are " + sheet.getPhysicalNumberOfRows() + " rows in the excel sheet");
 		for(int index = 0; index < sheet.getPhysicalNumberOfRows(); index++) {
+			out(index + " -- inside the for loop");
 			Row row = sheet.getRow(index);
 			if (row.getCell(0) == null || row.getCell(1) == null) continue;
 			else {

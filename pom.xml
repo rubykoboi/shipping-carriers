@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.4-SNAPSHOT</version>
-<!-- ver 0.0.4-SNAPSHOT:
-	1. included another RegEx pattern for CMA BOL
+  <version>0.0.6-SNAPSHOT</version>
+<!-- ver 0.0.6-SNAPSHOT:
+	1. Updated MSC REGEX for BOL
 -->
 
   <dependencies>
