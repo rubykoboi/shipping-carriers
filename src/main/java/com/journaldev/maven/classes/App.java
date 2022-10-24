@@ -52,9 +52,9 @@ public class App {
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
-	private final static String MSC_BL_REGEX = "\\s*(?<=BL# )(MEDU[A-Z]{1,2}\\d{6})";
+	private final static String MSC_BL_REGEX = "(?<=BL# )(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
-	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CIMTUV][ADNRWY]\\d{5})\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CEIMNTUV][ADGNPRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
@@ -124,10 +124,11 @@ public class App {
 			
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
 			fileTypes[a] = determineFileType(currentFile);
+			out("FILE TYPE is " + TYPE[fileTypes[a]]);
 			
 			if (filename.substring(index, index + 3).equals("BOL")) {
 				String shipID = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
-				out("ship ID is " + shipID);
+				out("BOL is " + shipID);
 				if (shipID.matches(SHIP_ID_REGEX)) searchAndMerge(filename, shipID,fileTypes[a]);
 				continue;
 			} else if (filename.substring(index, index + 3).equals("SID")) {
@@ -465,16 +466,20 @@ public class App {
 	
 	public static void processMSC(int pageCount) {
 		try {
+			out("processing MSC");
 			String fileName = currentFile.getAbsolutePath();
 			matcher = PATTERN_MSC.matcher(fileName);
 			String currentBL = "", shipId = "";
 			
 			if (matcher.find()) currentBL = matcher.group(1);
+			out("Current BOL is " + currentBL);
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 
 			File textfile = new File(TEXTFILE_PATH);
+			out("entering each page?");
 			for(int page = 1; page <= pageCount; page ++) {
+				out("yes, we entered page " + page);
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
@@ -632,10 +637,10 @@ public class App {
 			
 			while(currentLine != null) {
 				if (currentLine.toUpperCase().contains("COSCO"))	return COSCO_TYPE;
-				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
-				if (currentLine.toUpperCase().contains("MAERSK"))	return MAERSK_TYPE;
-				if (currentLine.toUpperCase().contains("INVOICING AND DISPUTES"))	return MSC_TYPE;
 				if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
+				if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
+				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
+				if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
 				currentLine = br.readLine();
 			}
 			br.close();
@@ -644,7 +649,7 @@ public class App {
 			out ("we got an exception in determineFileType function, it is "+ ex);
 			ex.printStackTrace();
 		}
-		return CMA_TYPE;
+		return MAERSK_TYPE;
 	}
 	
 	/**
@@ -699,7 +704,6 @@ public class App {
 		Sheet sheet = workbook.getSheetAt(0);
 		out("There are " + sheet.getPhysicalNumberOfRows() + " rows in the excel sheet");
 		for(int index = 0; index < sheet.getPhysicalNumberOfRows(); index++) {
-			out(index + " -- inside the for loop");
 			Row row = sheet.getRow(index);
 			if (row.getCell(0) == null || row.getCell(1) == null) continue;
 			else {
