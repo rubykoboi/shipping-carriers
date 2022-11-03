@@ -54,7 +54,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
 	private final static String MSC_BL_REGEX = "(?<=BL# )(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
-	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([CEIMNTUV][ADGNPRWY]\\d{5})\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGKNPRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
@@ -104,8 +104,10 @@ public class App {
 		PATTERN_SHIP_ID = Pattern.compile(SHIP_ID_REGEX);
 		PATTERN_AN = Pattern.compile(ARRIVAL_NOTICE_REGEX);
 
+		out("after creating patterns for RegEx findings");
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
+		out("after retrieving all files in Arrival Notices Folder : " + ARRIVAL_NOTICES_FILE_PATH);
 		ordersList = retrieveOrderFiles(); // FILENAMES WITH NO 'AN'
 		out ("THERE ARE " + filesList.size() + " FILES IN " + ARRIVAL_NOTICES_FILE_PATH);
 		out ("THERE ARE " + ordersList.size() + " ORDER FILES IN " + ORDERS_FILE_PATH);
@@ -113,6 +115,7 @@ public class App {
 		int pageCount;
 		String filename;
 		
+		out("before for loop and after creating the array for file types");
 		// PROCESS ALL FILES: SPLIT AND RENAME WITH ACCORDING B/L #S
 		for(int a=0 ; a<filesList.size(); a++) {
 			filename = filesList.get(a);
@@ -728,6 +731,7 @@ public class App {
 	
 	private static List <String> retrieveOrderFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
+			out("inside retrieveOrderFiles method... before returning list");
 			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(
 				f2 -> {
 					shipMatcher = PATTERN_SHIP_ID.matcher(f2);
@@ -749,7 +753,6 @@ public class App {
 						return false;
 					}
 					return true;}).collect(Collectors.toList());
-				
 //			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
 		}
 	}

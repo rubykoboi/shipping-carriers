@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.11-SNAPSHOT</version>
-<!-- ver 0.0.11-SNAPSHOT:
-	1. Changed determine file type process again to prioritize other types over MAERSK due to the possibility of "MAERSK" being a name of a vessel used
+  <version>0.0.12-SNAPSHOT</version>
+<!-- ver 0.0.12-SNAPSHOT:
+	1. Updated ship ID RegEx to accommodate for Pakistan and Argentina
 -->
 
   <dependencies>
