@@ -35,16 +35,18 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-	// BEGIN COMMENT
+	/**
 	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
-	//END COMMENT
-//	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
-//	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
-//	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
-//	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+	**/
+//	/** Local
+	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
+	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
+	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
+	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+//	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -55,7 +57,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
 	private final static String MSC_BL_REGEX = "(?<=BL# )(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
-	private final static String WAN_HAI_REGEX = "(?<=_)(\\d{3}[CA]\\d{5})|(\\d{3}[C]\\d{6})(?=\\.pdf)";
+	private final static String WAN_HAI_BL_REGEX = "(?<=_)(\\d{3}CA\\d{5})|(\\d{3}C\\d{6})";
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGKNPRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
@@ -104,6 +106,7 @@ public class App {
 		PATTERN_MAERSK = Pattern.compile(MAERSK_BL_REGEX);
 		PATTERN_MSC = Pattern.compile(MSC_BL_REGEX);
 		PATTERN_TURKON = Pattern.compile(TURKON_BL_REGEX);
+		PATTERN_WAN_HAI = Pattern.compile(WAN_HAI_BL_REGEX);
 		PATTERN_SHIP_ID = Pattern.compile(SHIP_ID_REGEX);
 		PATTERN_AN = Pattern.compile(ARRIVAL_NOTICE_REGEX);
 
@@ -167,6 +170,7 @@ public class App {
 					processTURKON(pageCount);
 					break;
 				case WAN_HAI_TYPE:
+					out("processing Wan Hai file");
 					processWANHAI();
 					break;
 			}
@@ -584,7 +588,7 @@ public class App {
 			String fileName = currentFile.getAbsolutePath();
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
-			
+			out("creating matcher for Wan Hai BOL matcher");
 			matcher = PATTERN_WAN_HAI.matcher(fileName);
 			String text = pdfStripper.getText(doc);
 			String currentBL = "", shipId = "";
@@ -598,13 +602,18 @@ public class App {
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 
+//			out("checking if any BOL is found");
 			if (matcher.find()) {
 				processed = true;
 				currentBL = matcher.group(1);
+				if(currentBL == null) currentBL = matcher.group(2);
 			}
+//			out("checking if BL is not blank");
 			if (!currentBL.isBlank()) {
+//				out("BL is not blank");
 				shipId = getFileName(currentBL);
 				if (shipId.matches(SHIP_ID_REGEX)) {
+					out("the ship ID regex is matching, we found " + shipId);
 					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
 				} else {
@@ -630,7 +639,7 @@ public class App {
 			shipId = "";
 			doc.close();
 		} catch (Exception e) {
-			out("We got an exception from processCOSCO " + e);
+			out("We got an exception from processWANHAI " + e);
 			e.printStackTrace();
 		}
 	}
