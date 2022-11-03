@@ -33,7 +33,8 @@ public class App {
 	private final static int MAERSK_TYPE = 3;
 	private final static int MSC_TYPE = 4;
 	private final static int TURKON_TYPE = 5;
-	private final static String[] TYPE = {"CMA", "COSCO", "EVERGREEN", "MAERSK", "MSC", "TURKON"};
+	private final static int WAN_HAI_TYPE = 6;
+	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
 	// BEGIN COMMENT
 	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
@@ -54,6 +55,7 @@ public class App {
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
 	private final static String MSC_BL_REGEX = "(?<=BL# )(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
+	private final static String WAN_HAI_REGEX = "(?<=_)(\\d{3}[CA]\\d{5})|(\\d{3}[C]\\d{6})(?=\\.pdf)";
 	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGKNPRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
@@ -64,6 +66,7 @@ public class App {
 	public static Pattern PATTERN_MAERSK;
 	public static Pattern PATTERN_MSC;
 	public static Pattern PATTERN_TURKON;
+	public static Pattern PATTERN_WAN_HAI;
 	public static Pattern PATTERN_SHIP_ID;
 	public static Pattern PATTERN_AN;
 	
@@ -109,19 +112,19 @@ public class App {
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
 		out("after retrieving all files in Arrival Notices Folder : " + ARRIVAL_NOTICES_FILE_PATH);
 		ordersList = retrieveOrderFiles(); // FILENAMES WITH NO 'AN'
-		out ("THERE ARE " + filesList.size() + " FILES IN " + ARRIVAL_NOTICES_FILE_PATH);
-		out ("THERE ARE " + ordersList.size() + " ORDER FILES IN " + ORDERS_FILE_PATH);
+		out("THERE ARE " + filesList.size() + " FILES IN " + ARRIVAL_NOTICES_FILE_PATH);
+		out("THERE ARE " + ordersList.size() + " ORDER FILES IN " + ORDERS_FILE_PATH);
 		int fileTypes[] = new int[filesList.size()];
 		int pageCount;
 		String filename;
 		
 		out("before for loop and after creating the array for file types");
 		// PROCESS ALL FILES: SPLIT AND RENAME WITH ACCORDING B/L #S
-		for(int a=0 ; a<filesList.size(); a++) {
+		for(int a=0; a<filesList.size(); a++) {
 			filename = filesList.get(a);
 			processed = false;
 			currentFile = new File(filesList.get(a));
-			out ("read in file ["+a+"] : "+filename);
+			out("read in file ["+a+"] : "+filename);
 
 			int index = filename.lastIndexOf("\\")+1;
 			
@@ -162,6 +165,9 @@ public class App {
 					break;
 				case TURKON_TYPE:
 					processTURKON(pageCount);
+					break;
+				case WAN_HAI_TYPE:
+					processWANHAI();
 					break;
 			}
 			doc.close();
@@ -255,7 +261,7 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out ("We got an exception from processCMA " + e);
+			out("We got an exception from processCMA " + e);
 			e.printStackTrace();
 		}
 	}
@@ -313,7 +319,7 @@ public class App {
 			shipId = "";
 			doc.close();
 		} catch (Exception e) {
-			out ("We got an exception from processCOSCO " + e);
+			out("We got an exception from processCOSCO " + e);
 			e.printStackTrace();
 		}
 	}
@@ -418,11 +424,10 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out ("We got an exception from processEVERGREEN " + e);
+			out("We got an exception from processEVERGREEN " + e);
 			e.printStackTrace();
 		}
 	}
-	
 	
 	public static void processMAERSK(int pageCount) {
 		try {
@@ -451,7 +456,7 @@ public class App {
 				matcher = PATTERN_MAERSK.matcher(currentLine);
 				if (matcher.find())	{
 					currentBL = matcher.group(1);
-					out ("found MAERSK match group1: " + currentBL);
+					out("found MAERSK match group1: " + currentBL);
 				}
 				currentLine = br.readLine();
 			}
@@ -461,11 +466,10 @@ public class App {
 			br.close();
 //			textfile.delete();
 		} catch (Exception e) {
-			out ("We got an exception from processMAERSK " + e);
+			out("We got an exception from processMAERSK " + e);
 			e.printStackTrace();
 		}
 	}
-	
 	
 	public static void processMSC(int pageCount) {
 		try {
@@ -510,7 +514,7 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out ("We got an exception from processMSC " + e);
+			out("We got an exception from processMSC " + e);
 			e.printStackTrace();
 		}
 	}
@@ -570,7 +574,63 @@ public class App {
 			doc.close();
 			textfile.delete(); 
 		} catch (Exception e) {
-			out ("We got an exception from processTURKON " + e);
+			out("We got an exception from processTURKON " + e);
+			e.printStackTrace();
+		}
+	}
+	
+	public static void processWANHAI() {
+		try {
+			String fileName = currentFile.getAbsolutePath();
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			
+			matcher = PATTERN_WAN_HAI.matcher(fileName);
+			String text = pdfStripper.getText(doc);
+			String currentBL = "", shipId = "";
+			File textfile = new File(TEXTFILE_PATH);
+
+			// EXTRACT PAGE TO TEXT FILE
+			BufferedWriter bw = new BufferedWriter(new FileWriter(textfile));
+			bw.write(text);
+			bw.close();
+
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
+			String currentLine = br.readLine();
+
+			if (matcher.find()) {
+				processed = true;
+				currentBL = matcher.group(1);
+			}
+			if (!currentBL.isBlank()) {
+				shipId = getFileName(currentBL);
+				if (shipId.matches(SHIP_ID_REGEX)) {
+					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+				} else {
+					while (currentLine != null) {
+						shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+						if (shipMatcher.find()) {
+							shipId = shipMatcher.group(1);
+							break;
+						}
+						currentLine = br.readLine();
+					}
+					if (!shipId.isBlank()) {
+						doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+						searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+					} else {
+						doc.save(ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf");
+						searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+					}
+				}
+			}
+			br.close();
+			textfile.delete();
+			shipId = "";
+			doc.close();
+		} catch (Exception e) {
+			out("We got an exception from processCOSCO " + e);
 			e.printStackTrace();
 		}
 	}
@@ -644,12 +704,13 @@ public class App {
 				if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
 				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 				if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
+				if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
 				currentLine = br.readLine();
 			}
 			br.close();
 			textfile.delete();
 		} catch (Exception ex) {
-			out ("we got an exception in determineFileType function, it is "+ ex);
+			out("we got an exception in determineFileType function, it is "+ ex);
 			ex.printStackTrace();
 		}
 		return MAERSK_TYPE;
@@ -667,12 +728,10 @@ public class App {
 			String fileName;
 			for(int i = 0; i < ordersList.size(); i++) {
 				fileName = ordersList.get(i);
-				if (!fileName.contains(shipID)) {
-					continue;
-				}
-				out ("MERGING");
-				out ("ARRIVAL NOTICE >> " + filePath);
-				out ("ORDER FILE >> " + fileName);
+				if (!fileName.contains(shipID)) continue;
+				out("MERGING");
+				out("ARRIVAL NOTICE >> " + filePath);
+				out("ORDER FILE >> " + fileName);
 				
 				// MERGE
 				File file = new File(filePath);
@@ -692,12 +751,12 @@ public class App {
 				
 				// DELETE FROM LIST
 				ordersList.remove(i);
-				out ("deleted from the list and returning true");
+				out("deleted from the list and returning true");
 				return true;
 			}
 			return false;
 		} catch (Exception e) {
-			out ("An Exception occured in searchAndMerge " + e.getMessage());
+			out("An Exception occured in searchAndMerge " + e.getMessage());
 			e.printStackTrace();
 		}
 		return false;
@@ -712,11 +771,11 @@ public class App {
 			else {
 				if(row.getCell(0).getStringCellValue().contains("EGLV"))  {
 					out("testing, the substring is " + row.getCell(0).getStringCellValue().substring(4));
-					out ("Key: "+row.getCell(0).getStringCellValue().substring(4)+" <-> Value: " +row.getCell(1).getStringCellValue());
+					out("Key: "+row.getCell(0).getStringCellValue().substring(4)+" <-> Value: " +row.getCell(1).getStringCellValue());
 					billToShipPair.put(row.getCell(0).getStringCellValue().substring(4), row.getCell(1).toString());
 				} else {
 					billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
-//					out ("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
+//					out("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
 				}
 			}
 		}
@@ -757,7 +816,7 @@ public class App {
 		}
 	}
 	
-	public static void out (String stringToPrint) {
+	public static void out(String stringToPrint) {
 		System.out.println(stringToPrint);
 		printLog += stringToPrint + "\n";
 		try {
