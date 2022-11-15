@@ -55,10 +55,10 @@ public class App {
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
-	private final static String MSC_BL_REGEX = "(?<=BL# )(MEDU[A-Z]{1,2}\\d{6,7})";
+	private final static String MSC_BL_REGEX = "(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String WAN_HAI_BL_REGEX = "(?<=_)(\\d{3}CA\\d{5})|(\\d{3}C\\d{6})";
-	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGKNPRWY]\\d{5})\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGHKNPRWY]\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
@@ -481,7 +481,8 @@ public class App {
 			String fileName = currentFile.getAbsolutePath();
 			matcher = PATTERN_MSC.matcher(fileName);
 			String currentBL = "", shipId = "";
-			
+			boolean foundBL = false, processed = false;
+			int savePageStart = 1, savePageEnd = 1;
 			if (matcher.find()) currentBL = matcher.group(1);
 			out("Current BOL is " + currentBL);
 			PDDocument doc = PDDocument.load(currentFile);
@@ -490,7 +491,6 @@ public class App {
 			File textfile = new File(TEXTFILE_PATH);
 			out("entering each page?");
 			for(int page = 1; page <= pageCount; page ++) {
-				out("yes, we entered page " + page);
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
 				String text = pdfStripper.getText(doc);
@@ -506,14 +506,30 @@ public class App {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 					if (shipMatcher.find()) shipId = shipMatcher.group(1);
 					if (currentLine.contains(currentBL)) {
-						if (!shipId.isEmpty()) splitDocAndRename(doc, page, page, shipId, MSC_TYPE);
-						else splitDocAndRename(doc, page, page, getFileName(currentBL), MSC_TYPE);
-						shipId = "";
-						break;
+						savePageEnd = page;
+						if(!foundBL) {
+							foundBL = true;
+							savePageStart = page;
+						}
+						if(page == pageCount) {
+							if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId, MSC_TYPE);
+							else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL), MSC_TYPE);
+							processed = true;
+							shipId = "";
+							break;	
+						} 
+						break; // Goes to next page because we know that this page has the BL #
 					}
 					currentLine = br.readLine();
 				}
 				br.close();
+				if(processed) break;
+				if(foundBL) continue;
+			}
+			if(!processed && foundBL) {
+				if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId, MSC_TYPE);
+				else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL), MSC_TYPE);
+				shipId = "";
 			}
 			doc.close();
 			textfile.delete();
