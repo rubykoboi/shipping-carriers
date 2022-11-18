@@ -35,13 +35,13 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-	/**
+//	/**
 	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
-	**/
-//	/** Local
+//	**/
+	/** Local
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
@@ -724,7 +724,7 @@ public class App {
 			String currentLine = br.readLine();
 			
 			while(currentLine != null) {
-				if (currentLine.toUpperCase().contains("COSCO"))	return COSCO_TYPE;
+				if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
 				if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
 				if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
 				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;

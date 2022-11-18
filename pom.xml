@@ -2,10 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.14-SNAPSHOT</version>
-<!-- ver 0.0.14-SNAPSHOT:
-	1. Updated MSC process to consider multiple pages with BL
-	2. Updated ship ID RegEx to accommodate for Thai origin
+  <version>0.0.15-SNAPSHOT</version>
+<!-- ver 0.0.15-SNAPSHOT:
+	1. udpated the check for COSCO, was previously assigning CMA to a COSCO Arrival Notice
 -->
 
   <dependencies>
