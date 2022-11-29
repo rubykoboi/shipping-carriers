@@ -2,9 +2,10 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.0.15-SNAPSHOT</version>
-<!-- ver 0.0.15-SNAPSHOT:
-	1. udpated the check for COSCO, was previously assigning CMA to a COSCO Arrival Notice
+  <version>0.1.0-SNAPSHOT</version>
+<!-- ver 0.1.0-SNAPSHOT:
+	1. Re-organized print statements
+	2. Set log file destination to the same folder as other programs'
 -->
 
   <dependencies>

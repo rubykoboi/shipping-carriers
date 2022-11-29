@@ -35,13 +35,13 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-//	/**
+//	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
-	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\junk.txt";
+	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
 //	**/
-	/** Local
+	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
@@ -86,7 +86,8 @@ public class App {
 			public void run() {
 				try { 
 					new App(); 
-					BufferedWriter bw = new BufferedWriter(new FileWriter(ARRIVAL_NOTICES_FILE_PATH+"Log.txt"));
+					out("PROGRAM SUCCESSFULLY EXECUTED");
+					BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 					bw.write(printLog);
 					bw.close();
 				} catch (Exception e) {e.printStackTrace();}
@@ -96,7 +97,6 @@ public class App {
 	
 	public App() throws Exception {
 		XSSFWorkbook workbook = new XSSFWorkbook(EXCEL_FILE);
-		out("ABOUT TO POPULATE SHIPIDs");
 		populateShipIds(workbook);
 
 		// INITIALIZE ALL BL# PATTERNS
@@ -110,25 +110,24 @@ public class App {
 		PATTERN_SHIP_ID = Pattern.compile(SHIP_ID_REGEX);
 		PATTERN_AN = Pattern.compile(ARRIVAL_NOTICE_REGEX);
 
-		out("after creating patterns for RegEx findings");
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-		out("after retrieving all files in Arrival Notices Folder : " + ARRIVAL_NOTICES_FILE_PATH);
 		ordersList = retrieveOrderFiles(); // FILENAMES WITH NO 'AN'
-		out("THERE ARE " + filesList.size() + " FILES IN " + ARRIVAL_NOTICES_FILE_PATH);
-		out("THERE ARE " + ordersList.size() + " ORDER FILES IN " + ORDERS_FILE_PATH);
+		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
+		out("# of shipment order files in I:\\2022: " + ordersList.size());
+		
 		int fileTypes[] = new int[filesList.size()];
 		int pageCount;
 		String filename;
 		
-		out("before for loop and after creating the array for file types");
-		// PROCESS ALL FILES: SPLIT AND RENAME WITH ACCORDING B/L #S
+
+		out("Processing begins...");
+		// PROCESS ALL FILES: SPLIT AND RENAME WITH CORRESPONDING B/L #S
 		for(int a=0; a<filesList.size(); a++) {
 			filename = filesList.get(a);
 			processed = false;
 			currentFile = new File(filesList.get(a));
-			out("read in file ["+a+"] : "+filename);
-
+			out("Processing file ["+a+"] : "+filename);
 			int index = filename.lastIndexOf("\\")+1;
 			
 			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
@@ -137,7 +136,7 @@ public class App {
 			
 			if (filename.substring(index, index + 3).equals("BOL")) {
 				String shipID = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
-				out("BOL is " + shipID);
+				out("Identifier: " + shipID);
 				if (shipID.matches(SHIP_ID_REGEX)) searchAndMerge(filename, shipID,fileTypes[a]);
 				continue;
 			} else if (filename.substring(index, index + 3).equals("SID")) {
@@ -170,7 +169,6 @@ public class App {
 					processTURKON(pageCount);
 					break;
 				case WAN_HAI_TYPE:
-					out("processing Wan Hai file");
 					processWANHAI();
 					break;
 			}
@@ -181,10 +179,12 @@ public class App {
 				a--;
 			}
 		}
+		out("...process finalized");
 	}
 	
 	public static void processCMA(int pageCount) {
 		try {
+			out("CMA process");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			File textfile = new File(TEXTFILE_PATH);
@@ -217,7 +217,7 @@ public class App {
 						foundBL = true;
 						newBL = matcher.group(1);
 						if(newBL == null) newBL = matcher.group(3);
-						out("CMA BOL Found ====>" + newBL);
+						out("BOL found ==>" + newBL);
 						if (pageCount == 1) {
 							if (!shipId.isEmpty()) {
 								doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
@@ -265,13 +265,14 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out("We got an exception from processCMA " + e);
+			out("Exception from processCMA: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 
 	public static void processCOSCO() {
 		try {
+			out("COSCO process");
 			String fileName = currentFile.getAbsolutePath();
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
@@ -323,13 +324,14 @@ public class App {
 			shipId = "";
 			doc.close();
 		} catch (Exception e) {
-			out("We got an exception from processCOSCO " + e);
+			out("Exception from processCOSCO: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 	
 	public static void processEVERGREEN(int pageCount) {
 		try {
+			out("EVERGREEN process");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			
@@ -338,9 +340,7 @@ public class App {
 			
 			boolean foundProof = false, foundBL;
 			File textfile = new File(TEXTFILE_PATH);
-			out("1------after making text file");
 			for(int page = 1; page <= pageCount; page ++) {
-				out("2."+page+"------after making text file");
 				foundBL = false;
 				newBL = "";
 				pdfStripper.setStartPage(page);
@@ -360,42 +360,34 @@ public class App {
 					shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
 
 					if (shipMatcher.find()) {
-						out("found shipment ID ");
 						shipId = shipMatcher.group(1);
+						out("Shipment ID: " +shipId);
 					}
 					if (!foundProof) { // IF THERE IS NO "BILL OF LADING NO. ," just ignore
 						if (currentLine.contains("BILL OF LADING NO. ")) {
-							out("page ["+page+"] is a Bill of lading");
 							foundProof = true;
 						}
 					} else if (matcher.find()) {
-						out("page ["+page+"] is a continuation Bill of lading");
-						out("found bill of lading for EVERGREEN");
 						foundBL = true;
 						newBL = matcher.group(1);
 						if (pageCount == 1) {
 							shipId = getFileName(newBL);
 							break;
 						} else if (page == 1) {
-							out("we are on page one, moving on");
 							break;
 						} else if (currentBL == newBL) {
-							out("there is a bill of lading found that is the same as the past one");
 							break; // IF SAME BL IS FOUND, MOVE ON TO THE NEXT PAGE
 						} else if (currentBL == "") { // THERE WERE NO BLs FOUND BEFORE THIS NEW ONE, SO DISCARD PREVIOUS PAGES
-							out("getting rid of previous pages with no bill of lading");
 							currentStartPage = page;
 							currentBL = newBL;
 							shipId = getFileName(currentBL);
 							break;
 						} else { // THERE WAS AN OLD BL 
-							out("looks like currentBL is not empty, BL is ["+currentBL+"]");
+							out("Previous BL : "+currentBL);
 							if (!shipId.isEmpty()) {
-								out("we are now splitting off the document and renaming with the ship ID that was found");
 								splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
 							}
 							else {
-								out("we are now splitting off the document and renaming with the bill of lading that was found because we cannot find the corresponding shipment ID");
 								splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), EVERGREEN_TYPE);
 							}
 							shipId = "";
@@ -403,14 +395,12 @@ public class App {
 						}
 						currentBL = newBL;
 					} else if (!currentBL.isEmpty() && currentLine.contains(currentBL)) { // FOLLOWING PAGES WITH THE SAME BL BUT NOT THE MAIN INVOICE PAGE
-						out("we found the bill of lading again in this page");
 						foundBL = true;
 						break;					
 					}
 					currentLine = br.readLine();
 				}
 				if (!foundBL && !currentBL.isEmpty()) { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
-					out("we only have a bil of lading prior to this one, so we are splitting that off first");
 					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
 					else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), EVERGREEN_TYPE);
 					shipId = "";
@@ -428,13 +418,14 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out("We got an exception from processEVERGREEN " + e);
+			out("Exception from processEVERGREEN: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 	
 	public static void processMAERSK(int pageCount) {
 		try {
+			out("MAERSK process");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String text = pdfStripper.getText(doc), shipId, currentBL = "";
@@ -460,7 +451,6 @@ public class App {
 				matcher = PATTERN_MAERSK.matcher(currentLine);
 				if (matcher.find())	{
 					currentBL = matcher.group(1);
-					out("found MAERSK match group1: " + currentBL);
 				}
 				currentLine = br.readLine();
 			}
@@ -468,28 +458,27 @@ public class App {
 
 			doc.close();
 			br.close();
-//			textfile.delete();
+			textfile.delete();
 		} catch (Exception e) {
-			out("We got an exception from processMAERSK " + e);
+			out("Exception from processMAERSK: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 	
 	public static void processMSC(int pageCount) {
 		try {
-			out("processing MSC");
+			out("MSC process");
 			String fileName = currentFile.getAbsolutePath();
 			matcher = PATTERN_MSC.matcher(fileName);
 			String currentBL = "", shipId = "";
 			boolean foundBL = false, processed = false;
 			int savePageStart = 1, savePageEnd = 1;
 			if (matcher.find()) currentBL = matcher.group(1);
-			out("Current BOL is " + currentBL);
+			out("BL --> " + currentBL);
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 
 			File textfile = new File(TEXTFILE_PATH);
-			out("entering each page?");
 			for(int page = 1; page <= pageCount; page ++) {
 				pdfStripper.setStartPage(page);
 				pdfStripper.setEndPage(page);
@@ -534,13 +523,14 @@ public class App {
 			doc.close();
 			textfile.delete();
 		} catch (Exception e) {
-			out("We got an exception from processMSC " + e);
+			out("Exception from processMSC: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 	
 	public static void processTURKON(int pageCount) {
 		try {
+			out("TURKON process");
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			
@@ -594,17 +584,18 @@ public class App {
 			doc.close();
 			textfile.delete(); 
 		} catch (Exception e) {
-			out("We got an exception from processTURKON " + e);
+			out("Exception from processTURKON: " + e.toString());
 			e.printStackTrace();
 		}
 	}
 	
 	public static void processWANHAI() {
 		try {
+			out("WanHai process");
 			String fileName = currentFile.getAbsolutePath();
 			PDDocument doc = PDDocument.load(currentFile);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
-			out("creating matcher for Wan Hai BOL matcher");
+
 			matcher = PATTERN_WAN_HAI.matcher(fileName);
 			String text = pdfStripper.getText(doc);
 			String currentBL = "", shipId = "";
@@ -618,18 +609,15 @@ public class App {
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
 
-//			out("checking if any BOL is found");
 			if (matcher.find()) {
 				processed = true;
 				currentBL = matcher.group(1);
 				if(currentBL == null) currentBL = matcher.group(2);
 			}
-//			out("checking if BL is not blank");
 			if (!currentBL.isBlank()) {
-//				out("BL is not blank");
 				shipId = getFileName(currentBL);
 				if (shipId.matches(SHIP_ID_REGEX)) {
-					out("the ship ID regex is matching, we found " + shipId);
+					out("ship ID found: " + shipId);
 					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
 				} else {
@@ -655,7 +643,7 @@ public class App {
 			shipId = "";
 			doc.close();
 		} catch (Exception e) {
-			out("We got an exception from processWANHAI " + e);
+			out("Exception from processWANHAI: " + e.toString());
 			e.printStackTrace();
 		}
 	}
@@ -695,16 +683,12 @@ public class App {
 		for (int page = 0; page < newDoc.size(); page++) {
 			name = ARRIVAL_NOTICES_FILE_PATH + newName + "_" + page + ".pdf";
 			File file = new File(name);
-			out("deleting file : " + name);
-			file.delete();
+			if(file.delete()) out("DELETED " + name);
 		}
-		out("going to do a search and merge with " + ARRIVAL_NOTICES_FILE_PATH + newName);
 		if (searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf", ID, carrierType)) {
-			out("search and merge ended with true");
 			File file = new File(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
-//		doc.close();
 	}
 	
 	public static int determineFileType(File file) {
@@ -735,7 +719,7 @@ public class App {
 			br.close();
 			textfile.delete();
 		} catch (Exception ex) {
-			out("we got an exception in determineFileType function, it is "+ ex);
+			out("Exception from determineFileType function: "+ ex.toString());
 			ex.printStackTrace();
 		}
 		return MAERSK_TYPE;
@@ -789,14 +773,11 @@ public class App {
 	
 	private static void populateShipIds(XSSFWorkbook workbook) throws Exception {
 		Sheet sheet = workbook.getSheetAt(0);
-		out("There are " + sheet.getPhysicalNumberOfRows() + " rows in the excel sheet");
 		for(int index = 0; index < sheet.getPhysicalNumberOfRows(); index++) {
 			Row row = sheet.getRow(index);
 			if (row.getCell(0) == null || row.getCell(1) == null) continue;
 			else {
 				if(row.getCell(0).getStringCellValue().contains("EGLV"))  {
-					out("testing, the substring is " + row.getCell(0).getStringCellValue().substring(4));
-					out("Key: "+row.getCell(0).getStringCellValue().substring(4)+" <-> Value: " +row.getCell(1).getStringCellValue());
 					billToShipPair.put(row.getCell(0).getStringCellValue().substring(4), row.getCell(1).toString());
 				} else {
 					billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
@@ -804,7 +785,6 @@ public class App {
 				}
 			}
 		}
-		out("There are " + billToShipPair.size() + " unique keys.");
 	}
 	
 	private static List <String> retrieveAllFiles() throws Exception {
@@ -815,7 +795,6 @@ public class App {
 	
 	private static List <String> retrieveOrderFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
-			out("inside retrieveOrderFiles method... before returning list");
 			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(
 				f2 -> {
 					shipMatcher = PATTERN_SHIP_ID.matcher(f2);
@@ -824,31 +803,24 @@ public class App {
 						long matchCount = shipMatcher.results().count();
 						long anMatches = anMatcher.results().count();
 						if(matchCount > 1) {
-							out("there are " + matchCount + " matches for a ship ID in this filename: " + f2);
+							out("# of ship ID matches in filename ["+f2+"]"+ matchCount);
 							if(anMatches < matchCount) {
-								out("There are less Arrival Notices attached on this file than the shipment orders. There are " + anMatches + " ANs attached to this file when there are " + matchCount + " shipment orders here.");
+								out("ANs attached >> " + anMatches + " < shipIDs >> " + matchCount);
 								return true;
 							} else {
-								out("There are already matching or even more ANs attached to this file than the amount of shipment IDs there are for this order ==> " + anMatches + " >= " + matchCount);
+								out("ANs attached >> " + anMatches + " <= shipIDs >> " + matchCount);
 								return false;
 							}
 						}
-						out("there is only " + matchCount + " ship ID on this filename: " + f2);
+						out("One ship ID on this filename: " + f2);
 						return false;
 					}
 					return true;}).collect(Collectors.toList());
-//			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).collect(Collectors.toList());
 		}
 	}
 	
 	public static void out(String stringToPrint) {
 		System.out.println(stringToPrint);
 		printLog += stringToPrint + "\n";
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(ARRIVAL_NOTICES_FILE_PATH+"Log.txt"));
-			bw.write(printLog);
-			bw.close();
-		}
-		 catch (Exception e) { e.printStackTrace(); }
 	}
 }
