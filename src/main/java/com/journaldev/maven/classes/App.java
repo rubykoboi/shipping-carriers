@@ -754,13 +754,12 @@ public class App {
 				mergerPdf.mergeDocuments();
 				
 				// RENAME
-				orderFile.renameTo(new File(fileName.substring(0,fileName.length()-4)+" AN.pdf"));
+				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
 				file.delete();
 				// END COMMENT -----
 				
 				// DELETE FROM LIST
 				ordersList.remove(i);
-				out("deleted from the list and returning true");
 				return true;
 			}
 			return false;
@@ -781,7 +780,6 @@ public class App {
 					billToShipPair.put(row.getCell(0).getStringCellValue().substring(4), row.getCell(1).toString());
 				} else {
 					billToShipPair.put(row.getCell(0).toString(), row.getCell(1).toString());
-//					out("Key: "+row.getCell(0).getStringCellValue()+" <-> Value: " +row.getCell(1).getStringCellValue());
 				}
 			}
 		}
