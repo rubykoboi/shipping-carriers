@@ -46,7 +46,7 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
-//	**/
+	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -137,15 +137,32 @@ public class App {
 			if (filename.substring(index, index + 3).equals("BOL")) {
 				String shipID = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
 				out("Identifier: " + shipID);
-				if (shipID.matches(SHIP_ID_REGEX)) searchAndMerge(filename, shipID,fileTypes[a]);
+				if (shipID.matches(SHIP_ID_REGEX)) {
+					out(shipID + " looks like a shipment ID");
+					if(searchAndMerge(filename, shipID)) out("MERGED file with shipID: " +shipID);
+					else {
+						out("FAILED TO MERGE, matching file not found..? renaming the file with shipment ID found");
+						File file = new File(filesList.get(a));
+						String newFileName = filename.substring(0, index) + "SID " +shipID+".pdf";
+						file.renameTo(new File(newFileName));
+					}
+				} else {
+					out(shipID + " does not look like a shipment ID");
+				}
 				continue;
 			} else if (filename.substring(index, index + 3).equals("SID")) {
-				searchAndMerge(filename, filename.substring(index+4,filename.lastIndexOf(".")),fileTypes[a]);
+				if(searchAndMerge(filename, filename.substring(index+4,filename.lastIndexOf("."))))
+					out("SUCCESSFULLY MERGED " + filename);
+				else out("FILE DID NOT GET MERGED: " + filename);
 				continue;
 			}
 			
 			shipMatcher = PATTERN_SHIP_ID.matcher(filename);
-			if (shipMatcher.find()) searchAndMerge(filename,shipMatcher.group(1),fileTypes[a]);
+			if (shipMatcher.find()) {
+				if(searchAndMerge(filename,shipMatcher.group(1)))
+					out("SUCCESSFULLY MERGED " + filename);
+				else out("FILE DID NOT GET MERGED: " + filename);
+			}
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
 			
@@ -221,13 +238,17 @@ public class App {
 						if (pageCount == 1) {
 							if (!shipId.isEmpty()) {
 								doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
-								searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf", shipId, CMA_TYPE);
+								if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf", shipId))
+									out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
+								else out("FILE DID NOT GET MERGED: " + ARRIVAL_NOTICES_FILE_PATH + "SID " + shipId + ".pdf");
 								doc.close();
 							} else {
 								String newFileName = getFileName(newBL);
 								if (newFileName.matches(SHIP_ID_REGEX)) {
 									doc.save(ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf");
-									searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf", newFileName, CMA_TYPE);
+									if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf", newFileName))
+										out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf");
+									else out("FILE DID NOT GET MERGED: " + ARRIVAL_NOTICES_FILE_PATH + "SID " + newFileName + ".pdf");
 								} else {
 									doc.save(ARRIVAL_NOTICES_FILE_PATH + "BOL " + newFileName + ".pdf");
 								}
@@ -309,15 +330,22 @@ public class App {
 			}
 			if (!shipId.isBlank()) {
 				doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
-				searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, COSCO_TYPE);
+				if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
+					out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+				else out("FILE DID NOT GET MERGED: " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+					
 			} else if (!currentBL.isBlank()) {
 				shipId = getFileName(currentBL);
 				if (shipId.matches(SHIP_ID_REGEX)) {
-					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID COSU"+shipId+".pdf");
-					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID COSU"+shipId+".pdf", shipId, COSCO_TYPE);
+					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+					if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
+						out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+					else out("FILE DID NOT GET MERGED: " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 				} else {
 					doc.save(ARRIVAL_NOTICES_FILE_PATH+"BOL COSU"+shipId+".pdf");
-					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"BOL COSU"+shipId+".pdf", shipId, COSCO_TYPE);
+					if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"BOL COSU"+shipId+".pdf", shipId))
+						out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"BOL COSU"+shipId+".pdf");
+					else out("FILE DID NOT GET MERGED: " + ARRIVAL_NOTICES_FILE_PATH+"BOL COSU"+shipId+".pdf");
 				}
 			}
 			
@@ -619,7 +647,9 @@ public class App {
 				if (shipId.matches(SHIP_ID_REGEX)) {
 					out("ship ID found: " + shipId);
 					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
-					searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+					if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
+						out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+					else out("DID NOT GET TO MERGE " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 				} else {
 					while (currentLine != null) {
 						shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
@@ -631,10 +661,14 @@ public class App {
 					}
 					if (!shipId.isBlank()) {
 						doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
-						searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+						if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
+							out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
+						else out("DID NOT GET TO MERGE " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 					} else {
 						doc.save(ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf");
-						searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf", shipId, WAN_HAI_TYPE);
+						if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf", shipId))
+							out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf");
+						else out("DID NOT GET TO MERGE " + ARRIVAL_NOTICES_FILE_PATH+"BOL "+shipId+".pdf");
 					}
 				}
 			}
@@ -685,7 +719,7 @@ public class App {
 			File file = new File(name);
 			if(file.delete()) out("DELETED " + name);
 		}
-		if (searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf", ID, carrierType)) {
+		if (searchAndMerge(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf", ID)) {
 			File file = new File(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
@@ -732,7 +766,7 @@ public class App {
 	 * @param type
 	 * @return
 	 */
-	public static boolean searchAndMerge(String filePath, String shipID, int type) {
+	public static boolean searchAndMerge(String filePath, String shipID) {
 		try {
 			String fileName;
 			for(int i = 0; i < ordersList.size(); i++) {
@@ -758,8 +792,6 @@ public class App {
 				file.delete();
 				// END COMMENT -----
 				
-				// DELETE FROM LIST
-				ordersList.remove(i);
 				return true;
 			}
 			return false;
@@ -796,24 +828,11 @@ public class App {
 			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(
 				f2 -> {
 					shipMatcher = PATTERN_SHIP_ID.matcher(f2);
-					Matcher anMatcher = PATTERN_AN.matcher(f2);
-					if(f2.toUpperCase().endsWith("AN.PDF")){
-						long matchCount = shipMatcher.results().count();
-						long anMatches = anMatcher.results().count();
-						if(matchCount > 1) {
-							out("# of ship ID matches in filename ["+f2+"]"+ matchCount);
-							if(anMatches < matchCount) {
-								out("ANs attached >> " + anMatches + " < shipIDs >> " + matchCount);
-								return true;
-							} else {
-								out("ANs attached >> " + anMatches + " <= shipIDs >> " + matchCount);
-								return false;
-							}
-						}
-						out("One ship ID on this filename: " + f2);
-						return false;
-					}
-					return true;}).collect(Collectors.toList());
+					long matchCount = shipMatcher.results().count();
+					if(matchCount > 1) {
+						out("# of ship ID matches in filename ["+f2+"] => "+ matchCount);
+					} else out("# of ship ID matches in filename ["+f2+"] => 1");
+				return true;}).collect(Collectors.toList());
 		}
 	}
 	
