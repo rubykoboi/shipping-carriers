@@ -2,13 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.1.2-SNAPSHOT</version>
-<!-- ver 0.1.2-SNAPSHOT:
-	1. removed filter of ANs so that all shipment orders can be read and none can 
-		be accidentally skipped if same shipment order's arrival notices kept getting attached
-	2. made it so that files will be renamed with the SID when it's found
-	3. cleaned up SearchAndMerge by one parameter less
-	4. added print statements to clarify if files are merged or not
+  <version>0.1.3-SNAPSHOT</version>
+<!-- ver 0.1.3-SNAPSHOT:
+	1. updated folder sources
 -->
 
   <dependencies>

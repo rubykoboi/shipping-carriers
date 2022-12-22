@@ -36,7 +36,8 @@ public class App {
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
 //	/** SHARED PATHS
-	private final static String ORDERS_FILE_PATH = "I:\\2022\\";
+	private final static String ORDERS_FILE_PATH1 = "I:\\2022\\";
+	private final static String ORDERS_FILE_PATH2 = "I:\\2023\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
@@ -112,7 +113,8 @@ public class App {
 
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-		ordersList = retrieveOrderFiles(); // FILENAMES WITH NO 'AN'
+		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH1);
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
 		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
 		out("# of shipment order files in I:\\2022: " + ordersList.size());
 		
@@ -823,16 +825,10 @@ public class App {
 		}
 	}
 	
-	private static List <String> retrieveOrderFiles() throws Exception {
-		try (Stream<Path> walk = Files.walk(Paths.get(ORDERS_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(
-				f2 -> {
-					shipMatcher = PATTERN_SHIP_ID.matcher(f2);
-					long matchCount = shipMatcher.results().count();
-					if(matchCount > 1) {
-						out("# of ship ID matches in filename ["+f2+"] => "+ matchCount);
-					} else out("# of ship ID matches in filename ["+f2+"] => 1");
-				return true;}).collect(Collectors.toList());
+	private static List <String> retrieveOrderFiles(String path) throws Exception {
+		try (Stream<Path> walk = Files.walk(Paths.get(path))) {
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf"))
+					.collect(Collectors.toList());
 		}
 	}
 	
