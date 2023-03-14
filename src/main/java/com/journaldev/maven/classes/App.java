@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -35,7 +36,7 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-//	/** SHARED PATHS
+	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH0 = "I:\\2020\\";
 	private final static String ORDERS_FILE_PATH1 = "I:\\2021\\";
 	private final static String ORDERS_FILE_PATH2 = "I:\\2022\\";
@@ -43,13 +44,13 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
-//	**/
-	/** LOCAL PATHS
+	**/
+//	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
-	**/
+//	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -115,10 +116,11 @@ public class App {
 
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
+		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
+//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
 		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
 		out("# of shipment order files in I:\\2022: " + ordersList.size());
 		
@@ -786,16 +788,32 @@ public class App {
 				File file = new File(filePath);
 				File orderFile = new File(fileName);
 				
-				// BEGIN COMMENT -----
-				PDFMergerUtility mergerPdf = new PDFMergerUtility();
-				mergerPdf.setDestinationFileName(fileName);
-				mergerPdf.addSource(orderFile);
-				mergerPdf.addSource(file);
-				mergerPdf.mergeDocuments();
+//				// BEGIN COMMENT -----
+//				PDFMergerUtility mergerPdf = new PDFMergerUtility();
+//				mergerPdf.setDestinationFileName(fileName);
+//				mergerPdf.addSource(orderFile);
+//				mergerPdf.addSource(file);
+//				mergerPdf.mergeDocuments();
+//				
+				out("checking if pdpage can compare");
+				out(fileName +" has pages from "+file);
+				PDDocument doc = PDDocument.load(new File(fileName));
+				PDPage page1 = doc.getPage(12);
+				PDPage pagetest = doc.getPage(12);
+				if(page1.equals(pagetest)) out("test returns true");
+				else out("I guess we cannot compare two pages...");
+				PDDocument doc2 = PDDocument.load(file);
+				for(int checker = 0; checker < doc.getNumberOfPages(); checker++) {
+					for(int checkerb = 0; checkerb < doc2.getNumberOfPages(); checkerb++) {
+						out("comparing origin page " + checker + " and file page " + checkerb);
+						out("RESULT: " + (doc.getPage(checker).equals(doc2.getPage(1))));	
+					}
+				}
+				
 				
 				// RENAME
 				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
-				file.delete();
+//				file.delete();
 				// END COMMENT -----
 				
 				return true;

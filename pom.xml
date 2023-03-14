@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
-<!-- ver 0.2.0-SNAPSHOT:
-	1. updated sources to include older folders, starting from \2020
+  <version>0.2.1-SNAPSHOT</version>
+<!-- ver 0.2.1-SNAPSHOT:
+	1. Updated the ship ID regex in order to prevent unreal ship ID codes
 -->
 
   <dependencies>
