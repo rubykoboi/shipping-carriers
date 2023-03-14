@@ -20,7 +20,6 @@ import java.util.stream.Stream;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -768,7 +767,10 @@ public class App {
 	}
 	
 	/**
-	 * This method
+	 * This method merges the matching arrival notice with the shipment order
+	 * by going through all the shipment order files and checking if 
+	 * the shipment ID found from the arrival notice is contained in 
+	 * the file name of the shipment order file
 	 * @param filePath
 	 * @param shipID
 	 * @param type
@@ -788,32 +790,32 @@ public class App {
 				File file = new File(filePath);
 				File orderFile = new File(fileName);
 				
-//				// BEGIN COMMENT -----
-//				PDFMergerUtility mergerPdf = new PDFMergerUtility();
-//				mergerPdf.setDestinationFileName(fileName);
-//				mergerPdf.addSource(orderFile);
-//				mergerPdf.addSource(file);
-//				mergerPdf.mergeDocuments();
-//				
-				out("checking if pdpage can compare");
-				out(fileName +" has pages from "+file);
-				PDDocument doc = PDDocument.load(new File(fileName));
-				PDPage page1 = doc.getPage(12);
-				PDPage pagetest = doc.getPage(12);
-				if(page1.equals(pagetest)) out("test returns true");
-				else out("I guess we cannot compare two pages...");
-				PDDocument doc2 = PDDocument.load(file);
-				for(int checker = 0; checker < doc.getNumberOfPages(); checker++) {
-					for(int checkerb = 0; checkerb < doc2.getNumberOfPages(); checkerb++) {
-						out("comparing origin page " + checker + " and file page " + checkerb);
-						out("RESULT: " + (doc.getPage(checker).equals(doc2.getPage(1))));	
-					}
-				}
+				// BEGIN COMMENT -----
+				PDFMergerUtility mergerPdf = new PDFMergerUtility();
+				mergerPdf.setDestinationFileName(fileName);
+				mergerPdf.addSource(orderFile);
+				mergerPdf.addSource(file);
+				mergerPdf.mergeDocuments();
+				
+//				out("checking if pdpage can compare");
+//				out(fileName +" has pages from "+file);
+//				PDDocument doc = PDDocument.load(new File(fileName));
+//				PDPage page1 = doc.getPage(12);
+//				PDPage pagetest = doc.getPage(12);
+//				if(page1.equals(pagetest)) out("test returns true");
+//				else out("I guess we cannot compare two pages...");
+//				PDDocument doc2 = PDDocument.load(file);
+//				for(int checker = 0; checker < doc.getNumberOfPages(); checker++) {
+//					for(int checkerb = 0; checkerb < doc2.getNumberOfPages(); checkerb++) {
+//						out("comparing origin page " + checker + " and file page " + checkerb);
+//						out("RESULT: " + (doc.getPage(checker).equals(doc2.getPage(1))));	
+//					}
+//				}
 				
 				
 				// RENAME
 				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
-//				file.delete();
+				file.delete();
 				// END COMMENT -----
 				
 				return true;
