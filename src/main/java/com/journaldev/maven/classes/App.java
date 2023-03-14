@@ -36,7 +36,7 @@ public class App {
 	private final static int TURKON_TYPE = 5;
 	private final static int WAN_HAI_TYPE = 6;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-	/** SHARED PATHS
+//	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH0 = "I:\\2020\\";
 	private final static String ORDERS_FILE_PATH1 = "I:\\2021\\";
 	private final static String ORDERS_FILE_PATH2 = "I:\\2022\\";
@@ -44,13 +44,13 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
-	**/
-//	/** LOCAL PATHS
+//	**/
+	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
-//	**/
+	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -62,7 +62,7 @@ public class App {
 	private final static String MSC_BL_REGEX = "(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
 	private final static String WAN_HAI_BL_REGEX = "(?<=_)(\\d{3}CA\\d{5})|(\\d{3}C\\d{6})";
-	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])([ACEIMNPTUV][ADGHKNPRWY]\\d{5})\\s*";
+	private final static String SHIP_ID_REGEX = "\\s*(?<![A-Z])((EG|BE|CN|IN|ID|MY|NP|PK|TW|TH|VN|TR|UA|AR)\\d{5})\\s*";
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
@@ -116,11 +116,11 @@ public class App {
 
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
-//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
+//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
+		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
 		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
 		out("# of shipment order files in I:\\2022: " + ordersList.size());
 		
