@@ -36,7 +36,7 @@ public class App {
 	private final static int TURKON_TYPE = 6;
 	private final static int WAN_HAI_TYPE = 7;
 	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","HAPAG-LLOYD","MAERSK","MSC","TURKON","WAN HAI"};
-	/** SHARED PATHS
+//	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH0 = "I:\\2020\\";
 	private final static String ORDERS_FILE_PATH1 = "I:\\2021\\";
 	private final static String ORDERS_FILE_PATH2 = "I:\\2022\\";
@@ -44,8 +44,8 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
-	**/
-//	/** LOCAL PATHS
+//	**/
+	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
@@ -119,19 +119,18 @@ public class App {
 
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
-//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
-//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
+//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
+		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
+		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
 		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
-		out("# of shipment order files in I:\\2022: " + ordersList.size());
+		out("# of shipment order files in I:\\2020, I:\\2021, I:\\2022, and I:\\2023: " + ordersList.size());
 		
 		int fileTypes[] = new int[filesList.size()];
 		int pageCount;
 		String filename;
 		
-
 		out("Processing begins...");
 		// PROCESS ALL FILES: SPLIT AND RENAME WITH CORRESPONDING B/L #S
 		for(int a=0; a<filesList.size(); a++) {
@@ -152,7 +151,6 @@ public class App {
 			 * If the name is a B/L #, the corresponding SID # will be provided in the excel sheet.
 			 */
 			if (filename.substring(index, index + 3).equals("BOL")) {
-				out("BOL check succeeded...is it true? " + filename.substring(index,index+3));
 				String identifier = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
 				out("Identifier: " + identifier);
 				if (identifier.matches(SHIP_ID_REGEX)) {
@@ -164,18 +162,13 @@ public class App {
 						String newFileName = filename.substring(0, index) + "SID " +identifier+".pdf";
 						file.renameTo(new File(newFileName));
 					}
-				} else {
-					out(identifier + " does not look like a shipment ID");
-				}
+				} else out(identifier + " does not look like a shipment ID");
 				continue;
 			} else if (filename.substring(index, index + 3).equals("SID")) {
-				out("SID check succeeded...is it true? " + filename.substring(index,index+3));
 				if(searchAndMerge(filename, filename.substring(index+4,filename.lastIndexOf("."))))
 					out("SUCCESSFULLY MERGED " + filename);
 				else out("FILE DID NOT GET MERGED: " + filename);
 				continue;
-			} else {
-				out("The first two if conditions have failed, why? The substring of filename from index to index + 3 is: " + filename.substring(index,index+3));
 			}
 			
 			/**
@@ -483,7 +476,7 @@ public class App {
 	
 	public static void processHAPAG(int pageCount) {
 		try {
-			out("In processHAPAG");
+			out("HAPAG-LLOYD process");
 			/**
 			 * To accomplish:
 			 * - Read in Arrival Notice File
@@ -514,9 +507,10 @@ public class App {
 				if(shipMatcher.find()) {
 					shipId = shipMatcher.group(1);
 					splitDocAndRename(doc, 1, pageCount-2, shipId);
+					processed = true;
 					doc.close();
 					shipIdFound = true;
-					out("shipID is found");
+					out("shipment ID was found in the file");
 					break;
 				}
 				if(matcher.find()) bl = matcher.group(1);
@@ -524,8 +518,8 @@ public class App {
 			}
 			br.close();
 			if(!shipIdFound) {
-				out("shipID not found...?");
 				splitDocAndRename(doc, 1, pageCount-2, bl);
+				processed = true;
 				doc.close();
 			}
 			textfile.delete();
@@ -730,7 +724,7 @@ public class App {
 			if (!currentBL.isBlank()) {
 				shipId = getFileName(currentBL);
 				if (shipId.matches(SHIP_ID_REGEX)) {
-					out("ship ID found: " + shipId);
+					out("Ship ID found within the file: " + shipId);
 					doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 					if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
 						out("SUCCESSFULLY MERGED " + ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
