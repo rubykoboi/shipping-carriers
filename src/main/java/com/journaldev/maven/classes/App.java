@@ -30,12 +30,13 @@ public class App {
 	private final static int CMA_TYPE = 0;
 	private final static int COSCO_TYPE = 1;
 	private final static int EVERGREEN_TYPE = 2;
-	private final static int MAERSK_TYPE = 3;
-	private final static int MSC_TYPE = 4;
-	private final static int TURKON_TYPE = 5;
-	private final static int WAN_HAI_TYPE = 6;
-	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","MAERSK","MSC","TURKON","WAN HAI"};
-//	/** SHARED PATHS
+	private final static int HAPAG_LLOYD_TYPE = 3;
+	private final static int MAERSK_TYPE = 4;
+	private final static int MSC_TYPE = 5;
+	private final static int TURKON_TYPE = 6;
+	private final static int WAN_HAI_TYPE = 7;
+	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","HAPAG-LLOYD","MAERSK","MSC","TURKON","WAN HAI"};
+	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH0 = "I:\\2020\\";
 	private final static String ORDERS_FILE_PATH1 = "I:\\2021\\";
 	private final static String ORDERS_FILE_PATH2 = "I:\\2022\\";
@@ -43,13 +44,13 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
-//	**/
-	/** LOCAL PATHS
+	**/
+//	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
-	**/
+//	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -57,6 +58,7 @@ public class App {
 	private final static String CMA_BL_REGEX = "(\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*)|^([A-Z]{4}\\d{6})[^\\S]";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
+	private final static String HAPAG_LLOYD_BL_REGEX = "\\s+(HLCUIZ\\d{10})\\s+";
 	private final static String MAERSK_BL_REGEX = "(?<=MAEU \\- )(.*?)(?=B/L No:)";
 	private final static String MSC_BL_REGEX = "(MEDU[A-Z]{1,2}\\d{6,7})";
 	private final static String TURKON_BL_REGEX = "\\s*(\\d{8}\\d{0,2})(?=BILL OF LADING)";
@@ -68,6 +70,7 @@ public class App {
 	public static Pattern PATTERN_CMA;  
 	public static Pattern PATTERN_COSCO;
 	public static Pattern PATTERN_EVERGREEN;
+	public static Pattern PATTERN_HAPAG_LLOYD;
 	public static Pattern PATTERN_MAERSK;
 	public static Pattern PATTERN_MSC;
 	public static Pattern PATTERN_TURKON;
@@ -106,6 +109,7 @@ public class App {
 		PATTERN_CMA = Pattern.compile(CMA_BL_REGEX);
 		PATTERN_COSCO = Pattern.compile(COSCO_BL_REGEX);
 		PATTERN_EVERGREEN = Pattern.compile(EVERGREEN_BL_REGEX);
+		PATTERN_HAPAG_LLOYD = Pattern.compile(HAPAG_LLOYD_BL_REGEX);
 		PATTERN_MAERSK = Pattern.compile(MAERSK_BL_REGEX);
 		PATTERN_MSC = Pattern.compile(MSC_BL_REGEX);
 		PATTERN_TURKON = Pattern.compile(TURKON_BL_REGEX);
@@ -115,11 +119,11 @@ public class App {
 
 		// RETREIVE ALL PDFs IN FOLDER PATH
 		filesList = retrieveAllFiles();	// ALL PDFS IN THE ARRIVAL NOTICES FOLDER
-//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
-		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
-		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
+		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH);
+//		ordersList = retrieveOrderFiles(ORDERS_FILE_PATH0);
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH1));
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH2));
+//		ordersList.addAll(retrieveOrderFiles(ORDERS_FILE_PATH3));
 		out("# of Arrival Notices in S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\: " + filesList.size());
 		out("# of shipment order files in I:\\2022: " + ordersList.size());
 		
@@ -141,29 +145,45 @@ public class App {
 			fileTypes[a] = determineFileType(currentFile);
 			out("FILE TYPE is " + TYPE[fileTypes[a]]);
 			
+			/**
+			 * The following block of if statement checks if the filename has been previously processed 
+			 * and renamed to it's B/L # or SID #. If so, the file can be processed in a 'step 2' manner
+			 * where the matching shipment order file can be searched for through the SID #.
+			 * If the name is a B/L #, the corresponding SID # will be provided in the excel sheet.
+			 */
 			if (filename.substring(index, index + 3).equals("BOL")) {
-				String shipID = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
-				out("Identifier: " + shipID);
-				if (shipID.matches(SHIP_ID_REGEX)) {
-					out(shipID + " looks like a shipment ID");
-					if(searchAndMerge(filename, shipID)) out("MERGED file with shipID: " +shipID);
+				out("BOL check succeeded...is it true? " + filename.substring(index,index+3));
+				String identifier = getFileName(filename.substring(index+4,filename.lastIndexOf(".")));
+				out("Identifier: " + identifier);
+				if (identifier.matches(SHIP_ID_REGEX)) {
+					out(identifier + " looks like a shipment ID");
+					if(searchAndMerge(filename, identifier)) out("MERGED file with shipID: " +identifier);
 					else {
 						out("FAILED TO MERGE, matching file not found..? renaming the file with shipment ID found");
 						File file = new File(filesList.get(a));
-						String newFileName = filename.substring(0, index) + "SID " +shipID+".pdf";
+						String newFileName = filename.substring(0, index) + "SID " +identifier+".pdf";
 						file.renameTo(new File(newFileName));
 					}
 				} else {
-					out(shipID + " does not look like a shipment ID");
+					out(identifier + " does not look like a shipment ID");
 				}
 				continue;
 			} else if (filename.substring(index, index + 3).equals("SID")) {
+				out("SID check succeeded...is it true? " + filename.substring(index,index+3));
 				if(searchAndMerge(filename, filename.substring(index+4,filename.lastIndexOf("."))))
 					out("SUCCESSFULLY MERGED " + filename);
 				else out("FILE DID NOT GET MERGED: " + filename);
 				continue;
+			} else {
+				out("The first two if conditions have failed, why? The substring of filename from index to index + 3 is: " + filename.substring(index,index+3));
 			}
 			
+			/**
+			 * This if statement checks if the filename itself has the shipment order ID.
+			 * If it is already provided, we simply rename the arrival notice file name
+			 * with it, to prevent unnecessary long processes to find the shipment ID within
+			 * the file.
+			 */
 			shipMatcher = PATTERN_SHIP_ID.matcher(filename);
 			if (shipMatcher.find()) {
 				if(searchAndMerge(filename,shipMatcher.group(1)))
@@ -172,6 +192,7 @@ public class App {
 			}
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
+			doc.close();
 			
 			switch (fileTypes[a]) {
 				case CMA_TYPE:
@@ -182,6 +203,9 @@ public class App {
 					break;
 				case EVERGREEN_TYPE:
 					processEVERGREEN(pageCount);
+					break;
+				case HAPAG_LLOYD_TYPE:
+					processHAPAG(pageCount);
 					break;
 				case MAERSK_TYPE:
 					processMAERSK(pageCount);
@@ -196,7 +220,6 @@ public class App {
 					processWANHAI();
 					break;
 			}
-			doc.close();
 			if (processed) {
 				currentFile.delete();
 				filesList.remove(a);
@@ -265,18 +288,18 @@ public class App {
 						} else if (page == 1) currentBL = newBL;
 						else if (!currentBL.equals(newBL)) {
 							if (currentStartPage < page-1) {
-								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), CMA_TYPE);
+								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL));
 								shipId = "";
 							} else {
-								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, CMA_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL), CMA_TYPE);
+								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL));
 								shipId = "";
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						} else if (page == pageCount) {
-							if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-							else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), CMA_TYPE);
+							if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId);
+							else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL));
 							shipId = "";
 						}
 						break;
@@ -284,8 +307,8 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if (!foundBL && page == pageCount) {
-					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, CMA_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), CMA_TYPE);
+					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId);
+					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL));
 					shipId = "";
 				}
 				br.close();
@@ -420,10 +443,10 @@ public class App {
 						} else { // THERE WAS AN OLD BL 
 							out("Previous BL : "+currentBL);
 							if (!shipId.isEmpty()) {
-								splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
+								splitDocAndRename(doc, currentStartPage, page-1, shipId);
 							}
 							else {
-								splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), EVERGREEN_TYPE);
+								splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL));
 							}
 							shipId = "";
 							currentStartPage = page;
@@ -436,15 +459,15 @@ public class App {
 					currentLine = br.readLine();
 				}
 				if (!foundBL && !currentBL.isEmpty()) { // WE DIDN'T FIND A BL BUT WE HAD A PREVIOUS ONE, SO WE END THE SPLIT BEFORE THIS PAGE 
-					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, EVERGREEN_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), EVERGREEN_TYPE);
+					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId);
+					else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL));
 					shipId = "";
 					currentStartPage = page;
 					currentBL = "";
 				}
 				if (foundBL && page == pageCount) {
-					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage,page, shipId, EVERGREEN_TYPE);
-					else splitDocAndRename(doc, currentStartPage,page, getFileName(currentBL), EVERGREEN_TYPE);
+					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage,page, shipId);
+					else splitDocAndRename(doc, currentStartPage,page, getFileName(currentBL));
 					shipId = "";
 				}
 				br.close();
@@ -454,6 +477,61 @@ public class App {
 			textfile.delete();
 		} catch (Exception e) {
 			out("Exception from processEVERGREEN: " + e.toString());
+			e.printStackTrace();
+		}
+	}
+	
+	public static void processHAPAG(int pageCount) {
+		try {
+			out("In processHAPAG");
+			/**
+			 * To accomplish:
+			 * - Read in Arrival Notice File
+			 * - Save text to a notepad
+			 * - Go through each line of text and find the corresponding shipment ID pattern
+			 * - Save that shipment ID pattern and rename the file with it, concatenating "SID "
+			 * - if a B/L pattern is found first, save that
+			 * - if the file is processed through and no shipment ID is found, rename the file 
+			 * with the B/L number, concatenating "BOL " in front of it
+			 * - save the file without keeping the last two pages
+			 */
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			String text = pdfStripper.getText(doc), shipId = "", bl = "";
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
+			
+			// EXTRACT PAGE TO TEXt FILE
+			bw.write(text);
+			bw.close();
+			
+			File textfile = new File(TEXTFILE_PATH);
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
+			String currentLine = br.readLine();
+			boolean shipIdFound = false;
+			while(currentLine != null) {
+				shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+				matcher = PATTERN_HAPAG_LLOYD.matcher(currentLine);
+				if(shipMatcher.find()) {
+					shipId = shipMatcher.group(1);
+					splitDocAndRename(doc, 1, pageCount-2, shipId);
+					doc.close();
+					shipIdFound = true;
+					out("shipID is found");
+					break;
+				}
+				if(matcher.find()) bl = matcher.group(1);
+				currentLine = br.readLine();
+			}
+			br.close();
+			if(!shipIdFound) {
+				out("shipID not found...?");
+				splitDocAndRename(doc, 1, pageCount-2, bl);
+				doc.close();
+			}
+			textfile.delete();
+			doc.close();
+		} catch (Exception e) {
+			out("Exception from processHAPAG: " + e.toString());
 			e.printStackTrace();
 		}
 	}
@@ -478,7 +556,7 @@ public class App {
 				if (shipMatcher.find()) {
 					processed = true;
 					shipId = shipMatcher.group(1);
-					splitDocAndRename(doc, 1, pageCount, shipId, MAERSK_TYPE);
+					splitDocAndRename(doc, 1, pageCount, shipId);
 					break;
 				}
 				currentLine = br.readLine();
@@ -489,10 +567,10 @@ public class App {
 				}
 				currentLine = br.readLine();
 			}
-			if(!processed) splitDocAndRename(doc, 1, pageCount, getFileName(currentBL), MAERSK_TYPE);
+			br.close();
+			if(!processed) splitDocAndRename(doc, 1, pageCount, getFileName(currentBL));
 
 			doc.close();
-			br.close();
 			textfile.delete();
 		} catch (Exception e) {
 			out("Exception from processMAERSK: " + e.toString());
@@ -536,8 +614,8 @@ public class App {
 							savePageStart = page;
 						}
 						if(page == pageCount) {
-							if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId, MSC_TYPE);
-							else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL), MSC_TYPE);
+							if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId);
+							else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL));
 							processed = true;
 							shipId = "";
 							break;	
@@ -551,8 +629,8 @@ public class App {
 				if(foundBL) continue;
 			}
 			if(!processed && foundBL) {
-				if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId, MSC_TYPE);
-				else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL), MSC_TYPE);
+				if (!shipId.isEmpty()) splitDocAndRename(doc, savePageStart, savePageEnd, shipId);
+				else splitDocAndRename(doc, savePageStart, savePageEnd, getFileName(currentBL));
 				shipId = "";
 			}
 			doc.close();
@@ -595,11 +673,11 @@ public class App {
 						foundBL = true;
 						if (currentBL != "") {
 							if (currentStartPage < page-1) {
-								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL), TURKON_TYPE);
+								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page-1, shipId);
+								else splitDocAndRename(doc, currentStartPage, page-1, getFileName(currentBL));
 							} else {
-								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId, TURKON_TYPE);
-								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL), TURKON_TYPE);
+								if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, currentStartPage, shipId);
+								else splitDocAndRename(doc, currentStartPage, currentStartPage, getFileName(currentBL));
 							}
 							currentStartPage = page; // NEW START PAGE FOR THE NEXT SPLIT
 						}
@@ -609,12 +687,12 @@ public class App {
 					}
 					currentLine = br.readLine();
 				}
+				br.close();
 				if (!foundBL && page == pageCount) {
-					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId, TURKON_TYPE);
-					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL), TURKON_TYPE);
+					if (!shipId.isEmpty()) splitDocAndRename(doc, currentStartPage, page, shipId);
+					else splitDocAndRename(doc, currentStartPage, page, getFileName(currentBL));
 					shipId = "";
 				}
-				br.close();
 			}
 			doc.close();
 			textfile.delete(); 
@@ -666,6 +744,7 @@ public class App {
 						}
 						currentLine = br.readLine();
 					}
+					br.close();
 					if (!shipId.isBlank()) {
 						doc.save(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf");
 						if(searchAndMerge(ARRIVAL_NOTICES_FILE_PATH+"SID "+shipId+".pdf", shipId))
@@ -679,7 +758,6 @@ public class App {
 					}
 				}
 			}
-			br.close();
 			textfile.delete();
 			shipId = "";
 			doc.close();
@@ -695,7 +773,7 @@ public class App {
 		return ship.trim();
 	}
 	
-	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName, int carrierType) throws IOException {
+	public static void splitDocAndRename(PDDocument doc, int start, int end, String newName) throws IOException {
 		if(newName.isBlank()) return;
 		Splitter splitter = new Splitter();
 		splitter.setStartPage(start);
@@ -730,6 +808,7 @@ public class App {
 			File file = new File(ARRIVAL_NOTICES_FILE_PATH + newName + ".pdf");
 			file.delete();
 		}
+		doc.close();
 	}
 	
 	public static int determineFileType(File file) {
@@ -747,8 +826,8 @@ public class App {
 			File textfile = new File(TEXTFILE_PATH);
 			BufferedReader br = new BufferedReader(new FileReader(textfile));
 			String currentLine = br.readLine();
-			
 			while(currentLine != null) {
+				if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
 				if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
 				if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
 				if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
@@ -757,8 +836,8 @@ public class App {
 				if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
 				currentLine = br.readLine();
 			}
-			br.close();
 			textfile.delete();
+			br.close();
 		} catch (Exception ex) {
 			out("Exception from determineFileType function: "+ ex.toString());
 			ex.printStackTrace();
