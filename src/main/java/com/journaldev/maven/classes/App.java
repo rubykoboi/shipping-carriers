@@ -49,7 +49,9 @@ public class App {
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
-	private final static String TEXTFILE_PATH = "C:\\SC\\junk.txt";
+	private final static String TEXTFILE_PATH = "C:\\SC\\Shipping Couriers Organizer_LOG_FILE.txt";
+	private final static String TEXTFILE_PATH1 = "C:\\SC\\comparativeText.txt";
+	private final static String TEXTFILE_PATH2 = "C:\\SC\\comparativeText2.txt";
 //	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
@@ -493,7 +495,7 @@ public class App {
 			String text = pdfStripper.getText(doc), shipId = "", bl = "";
 			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 			
-			// EXTRACT PAGE TO TEXt FILE
+			// EXTRACT PAGE TO TEXT FILE
 			bw.write(text);
 			bw.close();
 			
@@ -506,7 +508,7 @@ public class App {
 				matcher = PATTERN_HAPAG_LLOYD.matcher(currentLine);
 				if(shipMatcher.find()) {
 					shipId = shipMatcher.group(1);
-					splitDocAndRename(doc, 1, pageCount-2, shipId);
+					splitDocAndRename(doc, 1, pageCount>2 ? pageCount-2 : pageCount, shipId);
 					processed = true;
 					doc.close();
 					shipIdFound = true;
@@ -518,7 +520,7 @@ public class App {
 			}
 			br.close();
 			if(!shipIdFound) {
-				splitDocAndRename(doc, 1, pageCount-2, bl);
+				splitDocAndRename(doc, 1, pageCount>2 ? pageCount-2 : pageCount, bl);
 				processed = true;
 				doc.close();
 			}
@@ -870,25 +872,46 @@ public class App {
 				mergerPdf.addSource(file);
 				mergerPdf.mergeDocuments();
 				
-//				out("checking if pdpage can compare");
-//				out(fileName +" has pages from "+file);
-//				PDDocument doc = PDDocument.load(new File(fileName));
-//				PDPage page1 = doc.getPage(12);
-//				PDPage pagetest = doc.getPage(12);
-//				if(page1.equals(pagetest)) out("test returns true");
-//				else out("I guess we cannot compare two pages...");
-//				PDDocument doc2 = PDDocument.load(file);
-//				for(int checker = 0; checker < doc.getNumberOfPages(); checker++) {
-//					for(int checkerb = 0; checkerb < doc2.getNumberOfPages(); checkerb++) {
-//						out("comparing origin page " + checker + " and file page " + checkerb);
-//						out("RESULT: " + (doc.getPage(checker).equals(doc2.getPage(1))));	
-//					}
-//				}
+
+				/** This is where the experiment begins
+				PDDocument doc = PDDocument.load(new File(fileName));
+				PDFTextStripper pdfStripper = new PDFTextStripper();
+				String text, text1;
+				BufferedWriter bw;
+
+				text = pdfStripper.getText(doc);
+				bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH1));
+				bw.write(text);
+				bw.close();
 				
+				PDDocument doc1 = PDDocument.load(file);
+				text1 = pdfStripper.getText(doc1);
+				bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH2));
+				bw.write(text1);
+				bw.close();
+				
+				
+				BufferedReader br, br1;
+				String currentLine, currentLine1;
+				br = new BufferedReader(new FileReader(TEXTFILE_PATH1));
+				br1 = new BufferedReader(new FileReader(TEXTFILE_PATH2));
+				
+				text = pdfStripper.getText(doc);
+				currentLine	= br.readLine();
+				currentLine1 = br1.readLine();
+				
+				br.close();	
+				br1.close();
+				(currentLine != null) {
+					text1 = pdfStripper.getText(doc1);
+				}
+				doc.close();
+				
+//				experiment ends **/
 				
 				// RENAME
-				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
-				file.delete();
+//				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
+//				file.delete();
 				// END COMMENT -----
 				
 				return true;
@@ -918,7 +941,7 @@ public class App {
 	
 	private static List <String> retrieveAllFiles() throws Exception {
 		try (Stream<Path> walk = Files.walk(Paths.get(ARRIVAL_NOTICES_FILE_PATH))) {
-			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().endsWith(".pdf")).filter(f2 -> !f2.matches(SHIP_ID_REGEX)).collect(Collectors.toList());
+			return walk.filter(p -> !Files.isDirectory(p)).map(p -> p.toString()).filter(f -> f.toLowerCase().trim().endsWith(".pdf")).filter(f2 -> !f2.matches(SHIP_ID_REGEX)).collect(Collectors.toList());
 		}
 	}
 	
