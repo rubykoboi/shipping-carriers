@@ -2,10 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.3.1-SNAPSHOT</version>
-<!-- ver 0.3.1-SNAPSHOT:
-	1. Added Castlegate processes
-	2. Adjusted Hapag-Lloyd because of missing last pages on some arrival notices
+  <version>0.3.2-SNAPSHOT</version>
+<!-- ver 0.3.2-SNAPSHOT:
+	1. Debugged CASTLEGATE_TYPE
 -->
 
   <dependencies>

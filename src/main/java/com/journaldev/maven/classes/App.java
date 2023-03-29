@@ -882,6 +882,7 @@ public class App {
 			try(BufferedReader br = new BufferedReader(new FileReader(textfile))) {
 				String currentLine = br.readLine();
 				while(currentLine != null) {
+					if (currentLine.toUpperCase().contains("\"Carrier\" means CastleGate Logistics Inc.")) return CASTLEGATE_TYPE;
 					if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
 					if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
 					if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
