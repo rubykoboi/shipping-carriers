@@ -27,15 +27,16 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class App {
 
-	private final static int CMA_TYPE = 0;
-	private final static int COSCO_TYPE = 1;
-	private final static int EVERGREEN_TYPE = 2;
-	private final static int HAPAG_LLOYD_TYPE = 3;
-	private final static int MAERSK_TYPE = 4;
-	private final static int MSC_TYPE = 5;
-	private final static int TURKON_TYPE = 6;
-	private final static int WAN_HAI_TYPE = 7;
-	private final static String[] TYPE = {"CMA","COSCO","EVERGREEN","HAPAG-LLOYD","MAERSK","MSC","TURKON","WAN HAI"};
+	private final static int CASTLEGATE_TYPE = 0;
+	private final static int CMA_TYPE = 1;
+	private final static int COSCO_TYPE = 2;
+	private final static int EVERGREEN_TYPE = 3;
+	private final static int HAPAG_LLOYD_TYPE = 4;
+	private final static int MAERSK_TYPE = 5;
+	private final static int MSC_TYPE = 6;
+	private final static int TURKON_TYPE = 7;
+	private final static int WAN_HAI_TYPE = 8;
+	private final static String[] TYPE = {"CASTLEGATE","CMA","COSCO","EVERGREEN","HAPAG-LLOYD","MAERSK","MSC","TURKON","WAN HAI"};
 //	/** SHARED PATHS
 	private final static String ORDERS_FILE_PATH0 = "I:\\2020\\";
 	private final static String ORDERS_FILE_PATH1 = "I:\\2021\\";
@@ -57,6 +58,7 @@ public class App {
 	private static List<String> ordersList;
 	private static boolean processed;
 	
+	private final static String CASTLEGATE_BL_REGEX = "(CGGMTUR[A-Z]{3}\\d{6})";
 	private final static String CMA_BL_REGEX = "(\\b([A-Z]{3}\\d{7}[A-Z]{0,1})\\s*)|^([A-Z]{4}\\d{6})[^\\S]";
 	private final static String COSCO_BL_REGEX = "(?<=BL)(\\d{10})\\s*";
 	private final static String EVERGREEN_BL_REGEX = "(?<=EGLV)(\\d{12})\\s*";
@@ -69,6 +71,7 @@ public class App {
 	private final static String ARRIVAL_NOTICE_REGEX = "( AN)";
 
 	private static HashMap<String, String> billToShipPair = new HashMap<String, String>();
+	public static Pattern PATTERN_CASTLEGATE;
 	public static Pattern PATTERN_CMA;  
 	public static Pattern PATTERN_COSCO;
 	public static Pattern PATTERN_EVERGREEN;
@@ -108,6 +111,7 @@ public class App {
 		populateShipIds(workbook);
 
 		// INITIALIZE ALL BL# PATTERNS
+		PATTERN_CASTLEGATE = Pattern.compile(CASTLEGATE_BL_REGEX);
 		PATTERN_CMA = Pattern.compile(CMA_BL_REGEX);
 		PATTERN_COSCO = Pattern.compile(COSCO_BL_REGEX);
 		PATTERN_EVERGREEN = Pattern.compile(EVERGREEN_BL_REGEX);
@@ -190,6 +194,9 @@ public class App {
 			doc.close();
 			
 			switch (fileTypes[a]) {
+				case CASTLEGATE_TYPE:
+					processCASTLEGATE(pageCount);
+					break;
 				case CMA_TYPE:
 					processCMA(pageCount);
 					break;
@@ -222,6 +229,58 @@ public class App {
 			}
 		}
 		out("...process finalized");
+	}
+	
+	public static void processCASTLEGATE(int pageCount) {
+		try {
+			out("CASTLEGATE process");
+			PDDocument doc = PDDocument.load(currentFile);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			File textfile = new File(TEXTFILE_PATH);
+			
+			String bl = "", shipId = "", text = pdfStripper.getText(doc);
+
+			// COMB EACH PAGE FOR BOL and SID
+			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
+			
+			// EXTRACT PAGE TO TEXT FILE
+			bw.write(text);
+			bw.close();
+			BufferedReader br = new BufferedReader(new FileReader(textfile));
+			String currentLine = br.readLine();
+			boolean shipIdFound = false, blFound = false;
+			while(currentLine != null) {
+				shipMatcher = PATTERN_SHIP_ID.matcher(currentLine);
+				matcher = PATTERN_CASTLEGATE.matcher(currentLine);
+				if(shipMatcher.find()) {
+					shipId = shipMatcher.group(1);
+					splitDocAndRename(doc, 1, pageCount>1 ? pageCount-1 : pageCount, shipId);
+					processed = true;
+					doc.close();
+					shipIdFound = true;
+					out("shipment ID was found in the file");
+					break;
+				}
+				if(matcher.find()) {
+					bl = matcher.group(1);
+					blFound = true;
+				}
+				currentLine = br.readLine();
+			}
+			br.close();
+			if(!shipIdFound) {
+				if(blFound) {
+					splitDocAndRename(doc, 1, pageCount>2 ? pageCount-2 : pageCount, bl);
+					processed = true;
+					doc.close();
+				} else out("NO BL NOR SHIPID WAS FOUND IN THIS FILE ["+currentFile+"].");
+			}
+			textfile.delete();
+			doc.close();
+		} catch (Exception e) {
+			out("Exception from processCASTLEGATE: " + e.toString());
+			e.printStackTrace();
+		}
 	}
 	
 	public static void processCMA(int pageCount) {
@@ -820,20 +879,21 @@ public class App {
 			bw.close();
 			
 			File textfile = new File(TEXTFILE_PATH);
-			BufferedReader br = new BufferedReader(new FileReader(textfile));
-			String currentLine = br.readLine();
-			while(currentLine != null) {
-				if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
-				if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
-				if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
-				if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
-				if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
-				if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
-				if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
-				currentLine = br.readLine();
+			try(BufferedReader br = new BufferedReader(new FileReader(textfile))) {
+				String currentLine = br.readLine();
+				while(currentLine != null) {
+					if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
+					if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
+					if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
+					if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
+					if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
+					if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
+					if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
+					currentLine = br.readLine();
+				}
+				br.close();
 			}
 			textfile.delete();
-			br.close();
 		} catch (Exception ex) {
 			out("Exception from determineFileType function: "+ ex.toString());
 			ex.printStackTrace();
@@ -910,8 +970,8 @@ public class App {
 //				experiment ends **/
 				
 				// RENAME
-//				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
-//				file.delete();
+				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
+				file.delete();
 				// END COMMENT -----
 				
 				return true;
