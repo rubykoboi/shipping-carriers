@@ -567,7 +567,7 @@ public class App {
 				matcher = PATTERN_HAPAG_LLOYD.matcher(currentLine);
 				if(shipMatcher.find()) {
 					shipId = shipMatcher.group(1);
-					splitDocAndRename(doc, 1, pageCount>2 ? pageCount-2 : pageCount, shipId);
+					splitDocAndRename(doc, 1, pageCount, shipId);
 					processed = true;
 					doc.close();
 					shipIdFound = true;
@@ -579,7 +579,8 @@ public class App {
 			}
 			br.close();
 			if(!shipIdFound) {
-				splitDocAndRename(doc, 1, pageCount>2 ? pageCount-2 : pageCount, bl);
+				splitDocAndRename(doc, 1, pageCount
+						, bl);
 				processed = true;
 				doc.close();
 			}
@@ -882,7 +883,7 @@ public class App {
 			try(BufferedReader br = new BufferedReader(new FileReader(textfile))) {
 				String currentLine = br.readLine();
 				while(currentLine != null) {
-					if (currentLine.toUpperCase().contains("\"Carrier\" means CastleGate Logistics Inc.")) return CASTLEGATE_TYPE;
+					if (currentLine.contains("\"Carrier\" means CastleGate Logistics Inc.")) return CASTLEGATE_TYPE;
 					if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
 					if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
 					if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;

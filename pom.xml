@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.3.2-SNAPSHOT</version>
-<!-- ver 0.3.2-SNAPSHOT:
-	1. Debugged CASTLEGATE_TYPE
+  <version>0.3.3-SNAPSHOT</version>
+<!-- ver 0.3.3-SNAPSHOT:
+	1. Updated the page count for saving Hapag-Lloyd
 -->
 
   <dependencies>
