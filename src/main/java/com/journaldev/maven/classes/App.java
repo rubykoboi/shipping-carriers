@@ -25,6 +25,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import de.redsix.pdfcompare.PdfComparator;
+
 public class App {
 
 	private final static int CASTLEGATE_TYPE = 0;
@@ -45,15 +47,19 @@ public class App {
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\";
 	private final static String EXCEL_FILE = "S:\\Purchasing\\GeneralShare\\ARRIVAL NOTICES\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
+	private final static String PDF1 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\page1.pdf";
+	private final static String PDF2 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\page2.pdf";
+	private final static String COMPARISON_FILE = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers COMPARISON_FILE";
 //	**/
 	/** LOCAL PATHS
 	private final static String ORDERS_FILE_PATH = "C:\\Orders\\";
 	private final static String ARRIVAL_NOTICES_FILE_PATH = "C:\\SC\\";
 	private final static String EXCEL_FILE = "C:\\SC\\ShipmentIDs.xlsx";
 	private final static String TEXTFILE_PATH = "C:\\SC\\Shipping Couriers Organizer_LOG_FILE.txt";
-	private final static String TEXTFILE_PATH1 = "C:\\SC\\comparativeText.txt";
-	private final static String TEXTFILE_PATH2 = "C:\\SC\\comparativeText2.txt";
-//	**/
+	private final static String PDF1 = "C:\\SC\\page1.pdf";
+	private final static String PDF2 = "C:\\SC\\page2.pdf";
+	private final static String COMPARISON_FILE = "C:\\SC\\COMPARISON FILE";
+	**/
 	private List<String> filesList;
 	private static List<String> ordersList;
 	private static boolean processed;
@@ -97,6 +103,9 @@ public class App {
 			public void run() {
 				try { 
 					new App(); 
+					new File(PDF1).delete();
+					new File(PDF2).delete();
+					new File(COMPARISON_FILE+".pdf").delete();
 					out("PROGRAM SUCCESSFULLY EXECUTED");
 					BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
 					bw.write(printLog);
@@ -885,11 +894,11 @@ public class App {
 				while(currentLine != null) {
 					if (currentLine.contains("\"Carrier\" means CastleGate Logistics Inc.")) return CASTLEGATE_TYPE;
 					if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
-					if (currentLine.toUpperCase().contains("COSCO") || currentLine.toUpperCase().contains("COSU"))	return COSCO_TYPE;
+					if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
+					if (currentLine.toUpperCase().contains("COSCOSHIPPING") || currentLine.toUpperCase().contains("COSCO SHIPPING LINES"))	return COSCO_TYPE;
 					if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
 					if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
 					if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
-					if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
 					if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
 					currentLine = br.readLine();
 				}
@@ -924,58 +933,69 @@ public class App {
 				out("ORDER FILE >> " + fileName);
 				
 				// MERGE
-				File file = new File(filePath);
-				File orderFile = new File(fileName);
+				File file = new File(filePath); // Arrival Notice file
+				File orderFile = new File(fileName); // Shipment Order file
 				
-				// BEGIN COMMENT -----
-				PDFMergerUtility mergerPdf = new PDFMergerUtility();
-				mergerPdf.setDestinationFileName(fileName);
-				mergerPdf.addSource(orderFile);
-				mergerPdf.addSource(file);
-				mergerPdf.mergeDocuments();
-				
+				PDDocument pdf1 = PDDocument.load(file);
+				PDDocument pdf2 = PDDocument.load(orderFile);
 
-				/** This is where the experiment begins
-				PDDocument doc = PDDocument.load(new File(fileName));
-				PDFTextStripper pdfStripper = new PDFTextStripper();
-				String text, text1;
-				BufferedWriter bw;
-
-				text = pdfStripper.getText(doc);
-				bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH1));
-				bw.write(text);
-				bw.close();
+				Splitter splitter1 = new Splitter();
+				Splitter splitter2 = new Splitter();
+				List<PDDocument> newPdf1 = splitter1.split(pdf1);
+				List<PDDocument> newPdf2 = splitter2.split(pdf2);
 				
-				PDDocument doc1 = PDDocument.load(file);
-				text1 = pdfStripper.getText(doc1);
-				bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH2));
-				bw.write(text1);
-				bw.close();
-				
-				
-				BufferedReader br, br1;
-				String currentLine, currentLine1;
-				br = new BufferedReader(new FileReader(TEXTFILE_PATH1));
-				br1 = new BufferedReader(new FileReader(TEXTFILE_PATH2));
-				
-				text = pdfStripper.getText(doc);
-				currentLine	= br.readLine();
-				currentLine1 = br1.readLine();
-				
-				br.close();	
-				br1.close();
-				(currentLine != null) {
-					text1 = pdfStripper.getText(doc1);
+				boolean isEqual, foundMatch = false;
+//				/** This is where the experiment begins
+				out("ARRIVAL NOTICE Page 1");
+				for (int b = 1; b <= pdf2.getNumberOfPages(); b++) {
+//					out("Shipment Order Page " + b);
+					splitter1.setStartPage(1);
+					splitter1.setEndPage(1);
+					splitter2.setStartPage(b);
+					splitter2.setEndPage(b);
+					newPdf1.get(0).save(new File(PDF1));
+					newPdf2.get(b-1).save(new File(PDF2));
+					isEqual = new PdfComparator(PDF1, PDF2).compare().writeTo(COMPARISON_FILE);
+					if(isEqual) {
+						out("The two pages : " + filePath + "[1] = " + fileName + "["+b+"] are equal");
+						foundMatch = true;
+						break;
+					}
 				}
-				doc.close();
+				if(foundMatch) {
+					out("We are skipping to the next arrival notice as this one is already attached to the pdf.");
+					out("==> DELETING ARRIVAL NOTICE: ["+filePath+"] ...");
+
+					newPdf1.clear();
+					newPdf2.clear();
+					pdf1.close();
+					pdf2.close();
+					file.delete();
+					break;
+				}
 				
+				newPdf1.clear();
+				newPdf2.clear();
+				pdf1.close();
+				pdf2.close();
+				
+				if(!foundMatch) {
+
+					out("After comparing page 1 of [" + filePath.trim().toUpperCase() + "] against all pages of shipment pdf, found no match, so we attach.");
 //				experiment ends **/
 				
-				// RENAME
-				orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
-				file.delete();
-				// END COMMENT -----
-				
+					// BEGIN COMMENT -----
+					PDFMergerUtility mergerPdf = new PDFMergerUtility();
+					mergerPdf.setDestinationFileName(fileName);
+					mergerPdf.addSource(orderFile);
+					mergerPdf.addSource(file);
+					mergerPdf.mergeDocuments();
+					
+					// RENAME
+					orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
+					file.delete();
+					// END COMMENT -----
+				}
 				return true;
 			}
 			return false;
