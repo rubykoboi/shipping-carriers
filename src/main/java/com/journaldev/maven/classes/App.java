@@ -155,10 +155,6 @@ public class App {
 			out("Processing file ["+a+"] : "+filename);
 			int index = filename.lastIndexOf("\\")+1;
 			
-			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
-			fileTypes[a] = determineFileType(currentFile);
-			out("FILE TYPE is " + TYPE[fileTypes[a]]);
-			
 			/**
 			 * The following block of if statement checks if the filename has been previously processed 
 			 * and renamed to it's B/L # or SID #. If so, the file can be processed in a 'step 2' manner
@@ -201,6 +197,10 @@ public class App {
 			PDDocument doc = PDDocument.load(currentFile);
 			pageCount = doc.getNumberOfPages();
 			doc.close();
+			
+			// DETERMINE EACH FILE's SHIPPING CARRIER ORIGIN
+			fileTypes[a] = determineFileType(currentFile);
+			out("FILE TYPE is " + TYPE[fileTypes[a]]);
 			
 			switch (fileTypes[a]) {
 				case CASTLEGATE_TYPE:
@@ -894,9 +894,9 @@ public class App {
 				while(currentLine != null) {
 					if (currentLine.contains("\"Carrier\" means CastleGate Logistics Inc.")) return CASTLEGATE_TYPE;
 					if (currentLine.toUpperCase().contains("HAPAG-LLOYD")) return HAPAG_LLOYD_TYPE;
-					if (currentLine.toUpperCase().contains("CMA CGM"))	return CMA_TYPE;
+					if (currentLine.toLowerCase().contains("usa.cma-cgm.com"))	return CMA_TYPE;
 					if (currentLine.toUpperCase().contains("COSCOSHIPPING") || currentLine.toUpperCase().contains("COSCO SHIPPING LINES"))	return COSCO_TYPE;
-					if (currentLine.toUpperCase().contains("TURKON"))	return TURKON_TYPE;
+					if (currentLine.toLowerCase().contains("www.turkon.com"))	return TURKON_TYPE;
 					if (currentLine.toUpperCase().contains("MEDITERRANEAN SHIPPING COMPANY"))	return MSC_TYPE;
 					if (currentLine.toUpperCase().contains("EVERGREEN")) return EVERGREEN_TYPE;
 					if (currentLine.toUpperCase().contains("WAN HAI"))	return WAN_HAI_TYPE;
@@ -992,7 +992,9 @@ public class App {
 					mergerPdf.mergeDocuments();
 					
 					// RENAME
-					orderFile.renameTo(new File(fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf")));
+					String newName = fileName.replaceAll(" AN","").replace(".pdf"," AN.pdf");
+					orderFile.renameTo(new File(newName));
+					ordersList.set(i, newName);
 					file.delete();
 					// END COMMENT -----
 				}
