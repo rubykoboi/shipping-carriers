@@ -2,11 +2,11 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.journaldev.maven</groupId>
   <artifactId>shipping-carriers</artifactId>
-  <version>0.4.2-SNAPSHOT</version>
-<!-- ver 0.4.2-SNAPSHOT:
-	1. Updated CMA detection string
-	2. Updated Turkon detection string
-	3. moved SID vs. BOL before the determination type formula
+  <version>0.4.3-SNAPSHOT</version>
+<!-- ver 0.4.3-SNAPSHOT:
+	1. Updated HAPAG-LLOYD process in order to add filtering condition on pages
+		to detect extra pages and omit them from being attached to the shipment
+		order files
 -->
 
   <dependencies>
