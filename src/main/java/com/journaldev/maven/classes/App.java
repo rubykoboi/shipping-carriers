@@ -49,6 +49,8 @@ public class App {
 	private final static String TEXTFILE_PATH = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers Organizer_LOG_FILE.txt";
 	private final static String PDF1 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\page1.pdf";
 	private final static String PDF2 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\page2.pdf";
+	private final static String hapagExtraPage1 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Hapag_extra1.pdf";
+	private final static String hapagExtraPage2 = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Hapag_extra2.pdf";
 	private final static String COMPARISON_FILE = "S:\\Purchasing\\GeneralShare\\Robbi Programs\\LOG FILES\\Shipping Couriers COMPARISON_FILE";
 //	**/
 	/** LOCAL PATHS
@@ -58,6 +60,8 @@ public class App {
 	private final static String TEXTFILE_PATH = "C:\\SC\\Shipping Couriers Organizer_LOG_FILE.txt";
 	private final static String PDF1 = "C:\\SC\\page1.pdf";
 	private final static String PDF2 = "C:\\SC\\page2.pdf";
+	private final static String hapagExtraPage1 = "C:\\Log Files\\Hapag_extra1.pdf";
+	private final static String hapagExtraPage2 = "C:\\Log Files\\Hapag_extra2.pdf";
 	private final static String COMPARISON_FILE = "C:\\SC\\COMPARISON FILE";
 	**/
 	private List<String> filesList;
@@ -548,7 +552,6 @@ public class App {
 		try {
 			out("HAPAG-LLOYD process");
 			/**
-			 * To accomplish:
 			 * - Read in Arrival Notice File
 			 * - Save text to a notepad
 			 * - Go through each line of text and find the corresponding shipment ID pattern
@@ -556,9 +559,38 @@ public class App {
 			 * - if a B/L pattern is found first, save that
 			 * - if the file is processed through and no shipment ID is found, rename the file 
 			 * with the B/L number, concatenating "BOL " in front of it
+			 * - if file contains extra pages at the end, send pdf through searchAndMerge with
+			 * two less pages, to omit the extra pages
 			 * - save the file without keeping the last two pages
 			 */
 			PDDocument doc = PDDocument.load(currentFile);
+			boolean isEqual = false;
+
+			Splitter splitter = new Splitter();
+			List<PDDocument> pdfPage = splitter.split(doc);
+			
+			/** This loop goes through the HAPAG-LLOYD document and checks if it contains the two 
+			 * 	extra pages at the end. If it does contain, the page count is reduced by how many 
+			 * 	pages there are.
+			 */
+			for (int b = 1; b <= doc.getNumberOfPages(); b++) {
+				splitter.setStartPage(b);
+				splitter.setEndPage(b);
+				pdfPage.get(b-1).save(new File(PDF1));
+				isEqual = new PdfComparator(PDF1, hapagExtraPage1).compare().writeTo(COMPARISON_FILE);
+				if(isEqual) {
+					out("Page " + "["+b+"] of " + currentFile.getAbsolutePath() + " is an extra page.");
+					pageCount = pageCount-2;
+					break;
+				} else {
+					isEqual = new PdfComparator(PDF1, hapagExtraPage2).compare().writeTo(COMPARISON_FILE);
+					if(isEqual) {
+						out("Page " + "["+b+"] of " + currentFile.getAbsolutePath() + " is an extra page.");
+						pageCount = pageCount-1;
+						break;
+					}
+				}
+			}
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String text = pdfStripper.getText(doc), shipId = "", bl = "";
 			BufferedWriter bw = new BufferedWriter(new FileWriter(TEXTFILE_PATH));
